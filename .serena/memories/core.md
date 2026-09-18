@@ -1,0 +1,1 @@
+This project is a message-mirror app developed for Darwin. It uses Flutter and Kotlin. It currently makes POST requests to an HTTP endpoint configured by the user, without supporting authentication. The app is intended to send notifications/SMS to the configured endpoint.

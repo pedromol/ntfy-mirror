@@ -1,0 +1,1 @@
+The project uses Flutter and Kotlin.
