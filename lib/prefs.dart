@@ -20,6 +20,72 @@ class Prefs {
   }
 
   static Future<String> getEndpoint() async {
+  try {
+    final res = await _channel.invokeMethod('getEndpoint');
+    return (res ?? '').toString();
+  } catch (_) {
+    return '';
+  }
+}
+
+static Future<String> getReception() async {
+  try {
+    final res = await _channel.invokeMethod('getReception');
+    return (res ?? '').toString();
+  } catch (_) {
+    return '';
+  }
+}
+
+static Future<Map<String, dynamic>> getAuth() async {
+  try {
+    final res = await _channel.invokeMethod('getAuth');
+    return (res ?? '{}').toString().isNotEmpty
+        ? jsonDecode(res.toString()) as Map<String, dynamic>
+        : {};
+  } catch (_) {
+    return {};
+  }
+}
+
+static Future<void> setAuth(Map<String, dynamic> auth) async {
+  try {
+    await _channel.invokeMethod('setAuth', jsonEncode(auth));
+  } catch (_) {}
+}
+  try {
+    final res = await _channel.invokeMethod('getEndpoint');
+    return (res ?? '').toString();
+  } catch (_) {
+    return '';
+  }
+}
+
+static Future<String> getReception() async {
+  try {
+    final res = await _channel.invokeMethod('getReception');
+    return (res ?? '').toString();
+  } catch (_) {
+    return '';
+  }
+}
+
+static Future<Map<String, dynamic>> getAuth() async {
+  try {
+    final res = await _channel.invokeMethod('getAuth');
+    return (res ?? '{}').toString().isNotEmpty
+        ? jsonDecode(res.toString()) as Map<String, dynamic>
+        : {};
+  } catch (_) {
+    return {};
+  }
+}
+
+static Future<void> setAuth(Map<String, dynamic> auth) async {
+  try {
+    await _channel.invokeMethod('setAuth', jsonEncode(auth));
+  } catch (_) {}
+}
     try {
       final res = await _channel.invokeMethod('getEndpoint');
       return (res ?? '').toString();

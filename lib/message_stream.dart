@@ -2,6 +2,8 @@ import 'dart:convert';
 import 'dart:async';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
+import 'package:message_mirror/auth/auth.dart';
+import 'package:message_mirror/auth/auth.dart';
 import 'package:message_mirror/logger.dart';
 import 'package:message_mirror/prefs.dart';
 import 'package:message_mirror/template_renderer.dart';
@@ -245,7 +247,75 @@ class MessageStream {
   
 
   Future<bool> _sendToApi(Map<String, dynamic> payload) async {
+  final uri = Uri.parse(endpoint);
+  final headers = _getAuthHeaders();
+  
+  // Use headers only if auth is selected
+  if (headers.isNotEmpty) {
+    await Logger.d('Sending with auth: ${headers.keys.join(', ')}');
+  }
+  
+  try {
+    final resp = await _http
+        .post(
+      uri,
+      headers: headers,
+      body: jsonEncode(payload),
+    )
+        .timeout(const Duration(seconds: 12));
+    await Logger.d('POST done: status=${resp.statusCode}, len=${resp.body.length}');
+    if (resp.statusCode >= 400) {
+      await Logger.e('POST error body: ${resp.body}');
+      return false;
+    }
+    return true;
+  } catch (err) {
+    await Logger.e('POST failed: $err');
+    return false;
+  }
+}
+  final uri = Uri.parse(endpoint);
+  final headers = _getAuthHeaders();
+  
+  // Use headers only if auth is selected
+  if (headers.isNotEmpty) {
+    await Logger.d('Sending with auth: ${headers.keys.join(', ')}');
+  }
+  
+  try {
+    final resp = await _http
+        .post(
+      uri,
+      headers: headers,
+      body: jsonEncode(payload),
+    )
+        .timeout(const Duration(seconds: 12));
+    await Logger.d('POST done: status=${resp.statusCode}, len=${resp.body.length}');
+    if (resp.statusCode >= 400) {
+      await Logger.e('POST error body: ${resp.body}');
+      return false;
+    }
+    return true;
+  } catch (err) {
+    await Logger.e('POST failed: $err');
+    return false;
+  }
+}
     final uri = Uri.parse(endpoint);
+final headers = _getAuthHeaders();
+
+// Use headers only if auth is selected
+if (headers.isNotEmpty) {
+  await Logger.d('Sending with auth: ${headers.keys.join(', ')}');
+}
+
+// POST with headers and body
+final resp = await _http
+    .post(
+  uri,
+  headers: headers,
+  body: jsonEncode(payload),
+}
     try {
       final resp = await _http
           .post(

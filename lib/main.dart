@@ -552,6 +552,465 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
 }
 
 class ConfigScreen extends StatefulWidget {
+  @override
+  State<ConfigScreen> createState() => _ConfigScreenState();
+}
+
+class _ConfigScreenState extends State<ConfigScreen> {
+  final TextEditingController endpointCtrl = TextEditingController();
+  bool smsEnabled = true;
+  bool hasNotifAccess = false;
+  bool hasPostNotif = false;
+  bool hasReadSms = false;
+  bool ignoringBattery = false;
+  bool serviceRunning = false;
+  bool checkingService = true;
+  MessageStream? stream;
+  String _lastSavedEndpoint = '';
+  AuthHeader? _authHeader;
+  Map<String, String> _authFields = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPrefs();
+  }
+
+  @override
+  void reassemble() {
+    super.reassemble();
+    _recheckService();
+  }
+
+  Future<void> _loadPrefs() async {
+    final sms = await _getSmsEnabled();
+    serviceRunning = await PlatformControls.isServiceRunning();
+    await _refreshPerms();
+    if (!mounted) return;
+    setState(() {
+      smsEnabled = sms;
+      checkingService = false;
+    });
+    final ep = await Prefs.getEndpoint();
+    if (!mounted) return;
+    setState(() {
+      endpointCtrl.text = ep;
+      _lastSavedEndpoint = ep;
+    });
+    _authHeader = await _getAuthHeader();
+    _authFields = await _getAuthFields();
+  }
+
+  Future<void> _recheckService() async {
+    setState(() { checkingService = true; });
+    final running = await PlatformControls.isServiceRunning();
+    if (!mounted) return;
+    setState(() {
+      serviceRunning = running;
+      checkingService = false;
+    });
+  }
+
+  Future<AuthHeader> _getAuthHeader() async {
+    final auth = await Prefs.getAuth();
+    if (auth.isEmpty) return NoAuth();
+    switch (auth['type']) {
+      case 'Bearer': return BearerAuth(auth['token'] as String);
+      case 'API key': return APIKeyAuth(auth['headerName'] as String, auth['apiKey'] as String);
+      case 'Basic': return BasicAuth(auth['username'] as String, auth['password'] as String);
+      default: return NoAuth();
+    }
+  }
+
+  Future<Map<String, String>> _getAuthFields() async {
+    final auth = await Prefs.getAuth();
+    return {
+      'token': auth['token'] as String,
+      'headerName': auth['headerName'] as String,
+      'apiKey': auth['apiKey'] as String,
+      'username': auth['username'] as String,
+      'password': auth['password'] as String,
+    };
+  }
+
+  void _saveDestination() {
+    final endpoint = endpointCtrl.text.trim();
+    if (endpoint.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Set Endpoint first')));
+      return;
+    }
+    Prefs.setEndpoint(endpoint);
+    final s = MessageStream(reception: '', endpoint: endpoint);
+    s.start();
+    Logger.d('Destination saved: endpoint=$endpoint');
+    setState(() {
+      stream = s;
+      _lastSavedEndpoint = endpoint;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    
+    return Scaffold(
+      backgroundColor: colorScheme.surface,
+      appBar: AppBar(
+        backgroundColor: colorScheme.surface,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: colorScheme.primaryContainer,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                Icons.sync_alt,
+                color: colorScheme.onPrimaryContainer,
+                size: 24,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Text(
+              'Message Mirror',
+              style: theme.textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: colorScheme.onSurface,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          IconButton(
+            tooltip: 'Queue',
+            icon: Icon(Icons.cloud_upload_outlined, color: colorScheme.onSurfaceVariant),
+            onPressed: () { Navigator.push(context, MaterialPageRoute(builder: (_) => const QueueScreen())); },
+          ),
+          IconButton(
+            tooltip: 'Logs',
+            icon: Icon(Icons.article_outlined, color: colorScheme.onSurfaceVariant),
+            onPressed: () { Navigator.push(context, MaterialPageRoute(builder: (_) => const LogsScreen())); },
+          ),
+          const SizedBox(width: 8),
+        ],
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  colorScheme.primaryContainer,
+                  colorScheme.primaryContainer.withValues(alpha: 0.7),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Column(
+              children: [
+                Icon(
+                  serviceRunning ? Icons.check_circle_rounded : Icons.pending_rounded,
+                  size: 48,
+                  color: serviceRunning ? Colors.green : colorScheme.onPrimaryContainer,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  serviceRunning ? 'Service Active' : 'Service Inactive',
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: colorScheme.onPrimaryContainer,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  serviceRunning 
+                      ? 'Messages are being monitored and forwarded'
+                      : 'Configure settings and start the service',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: colorScheme.onPrimaryContainer.withValues(alpha: 0.8),
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 24),
+          _ModernCard(
+            title: 'Destination Settings',
+            icon: Icons.settings_ethernet_rounded,
+            child: Column(
+              children: [
+                TextField(
+                  controller: endpointCtrl,
+                  textInputAction: TextInputAction.done,
+                  decoration: const InputDecoration(
+                    labelText: 'Endpoint URL',
+                    hintText: 'https://your-api.example.com/webhook',
+                    prefixIcon: Icon(Icons.link_rounded),
+                    helperText: 'HTTP endpoint to receive message data',
+                  ),
+                  onChanged: (_) { setState(() {}); },
+                ),
+                const SizedBox(height: 24),
+                FilledButton.icon(
+                  onPressed: (endpointCtrl.text.trim().isEmpty || !_destinationDirty)
+                      ? null
+                      : _saveDestination,
+                  icon: Icon(_destinationDirty ? Icons.save_rounded : Icons.check_rounded),
+                  label: Text(_destinationDirty ? 'Save Configuration' : 'Configuration Saved'),
+                ),
+                const SizedBox(height: 12),
+                OutlinedButton.icon(
+                  onPressed: () { Navigator.push(context, MaterialPageRoute(builder: (_) => const PayloadTemplateScreen())); },
+                  icon: const Icon(Icons.data_object_rounded),
+                  label: const Text('Edit Payload Template'),
+                ),
+                const SizedBox(height: 8),
+                OutlinedButton.icon(
+                  onPressed: () { Navigator.push(context, MaterialPageRoute(builder: (_) => const AppSelectorScreen())); },
+                  icon: const Icon(Icons.apps_rounded),
+                  label: const Text('Select Apps to Monitor'),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+          _ModernCard(
+            title: 'Auth Headers',
+            icon: Icons.security_rounded,
+            child: Column(
+              children: [
+                DropdownButton<AuthHeader>(
+                  value: _authHeader,
+                  onChanged: (AuthHeader? value) {
+                    setState(() {
+                      _authHeader = value;
+                      _authFields = _getAuthFields().then((fields) => fields);
+                    });
+                  },
+                  items: [
+                    DropdownMenuItem(value: NoAuth(), child: Text('None')),
+                    DropdownMenuItem(value: BearerAuth(''), child: Text('Bearer token')),
+                    DropdownMenuItem(value: APIKeyAuth('X-API-Key', ''), child: Text('API key')),
+                    DropdownMenuItem(value: BasicAuth('user', 'pass'), child: Text('Basic auth')),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                if (_authHeader != null && _authHeader!.type != 'None') {
+                  _AuthFields(_authHeader!, _authFields)
+                },
+                const SizedBox(height: 20),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+          _ModernCard(
+            title: 'Service Control',
+            icon: Icons.power_settings_new_rounded,
+            child: Column(
+              children: [
+                if (checkingService)
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: colorScheme.primary,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Text(
+                          'Checking service status...',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                else if (!serviceRunning)
+                  FilledButton.icon(
+                    onPressed: (endpointCtrl.text.trim().isEmpty)
+                        ? null
+                        : () async {
+                            setState(() { checkingService = true; });
+                            await PlatformControls.startService();
+                            await Future.delayed(const Duration(milliseconds: 600));
+                            final running = await PlatformControls.isServiceRunning();
+                            if (!mounted) return;
+                            setState(() {
+                              serviceRunning = running;
+                              checkingService = false;
+                            });
+                          },
+                    icon: const Icon(Icons.play_circle_filled_rounded),
+                    label: const Text('Start Monitoring Service'),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: Colors.green,
+                      foregroundColor: Colors.white,
+                    ),
+                  ),
+                else
+                  OutlinedButton.icon(
+                    onPressed: () async {
+                      setState(() { checkingService = true; });
+                      await PlatformControls.stopService();
+                      bool running = true;
+                      for (int i = 0; i < 5; i++) {
+                        await Future.delayed(const Duration(milliseconds: 300));
+                        running = await PlatformControls.isServiceRunning();
+                        if (!running) break;
+                      }
+                      if (!mounted) return;
+                      setState(() {
+                        serviceRunning = running;
+                        checkingService = false;
+                      });
+                    },
+                    icon: const Icon(Icons.stop_circle_rounded),
+                    label: const Text('Stop Service'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.red,
+                      side: BorderSide(color: Colors.red.withValues(alpha: 0.5)),
+                    ),
+                  ),
+                const SizedBox(height: 20),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.sms_rounded,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'SMS Observer',
+                              style: theme.textTheme.titleSmall?.copyWith(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            Text(
+                              'Monitor SMS messages in addition to notifications',
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Switch(
+                        value: smsEnabled,
+                        onChanged: (v) async { 
+                          await _setSmsEnabled(v); 
+                          await Logger.d('SMS enabled set to $v'); 
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+          _ModernCard(
+            title: 'Permissions',
+            icon: Icons.security_rounded,
+            child: Column(
+              children: [
+                _ModernPermissionRow(
+                  ok: hasNotifAccess,
+                  title: 'Notification Access',
+                  subtitle: 'Required to capture notifications',
+                  icon: Icons.notifications_rounded,
+                  action: () { PermissionService.openNotificationAccess(); },
+                ),
+                const SizedBox(height: 16),
+                _ModernPermissionRow(
+                  ok: hasPostNotif,
+                  title: 'Post Notifications',
+                  subtitle: 'Allow app to show status notifications',
+                  icon: Icons.notification_add_rounded,
+                  action: () async { 
+                    await PermissionService.requestPostNotifications(); 
+                    await _refreshPerms(); 
+                  },
+                ),
+                const SizedBox(height: 16),
+                _ModernPermissionRow(
+                  ok: hasReadSms,
+                  title: 'Read SMS',
+                  subtitle: 'Optional: Monitor SMS messages',
+                  icon: Icons.sms_rounded,
+                  isOptional: true,
+                  action: () async { 
+                    await PermissionService.requestReadSms(); 
+                    await _refreshPerms(); 
+                  },
+                ),
+                const SizedBox(height: 16),
+                _ModernPermissionRow(
+                  ok: ignoringBattery,
+                  title: 'Battery Optimization',
+                  subtitle: 'Prevent Android from stopping the service',
+                  icon: Icons.battery_saver_rounded,
+                  action: () { PermissionService.openBatterySettings(); },
+                ),
+                const SizedBox(height: 16),
+                FutureBuilder<int>(
+                  future: PermissionService.getDataSaverStatus(),
+                  builder: (context, snapshot) {
+                    final st = snapshot.data ?? 1;
+                    final ok = st == 1 || st == 2;
+                    return _ModernPermissionRow(
+                      ok: ok,
+                      title: 'Unrestricted Data',
+                      subtitle: 'Allow background network access',
+                      icon: Icons.data_usage_rounded,
+                      action: () { PermissionService.openDataSaverSettings(); },
+                    );
+                  },
+                ),
+                const SizedBox(height: 20),
+                OutlinedButton.icon(
+                  onPressed: _refreshPerms,
+                  icon: const Icon(Icons.refresh_rounded),
+                  label: const Text('Refresh Permissions'),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+          _GitHubInfoCard(),
+          const SizedBox(height: 32),
+        ],
+      ),
+    );
+  }
+}
   const ConfigScreen({super.key});
 
   @override
