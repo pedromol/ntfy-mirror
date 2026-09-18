@@ -65,7 +65,7 @@ class MessageStream {
       switch (call.method) {
         case 'onNotification':
           final Map<dynamic, dynamic> args = call.arguments as Map<dynamic, dynamic>;
-          await Logger.d('onNotification args: ' + args.toString());
+          await Logger.d('onNotification args: $args');
           final payload = await _buildNotifPayload(args);
           if (payload != null) {
             await Logger.d('Sending notification payload: ${payload['message_from']}');
@@ -79,7 +79,7 @@ class MessageStream {
           break;
         case 'onSms':
           final Map<dynamic, dynamic> args = call.arguments as Map<dynamic, dynamic>;
-          await Logger.d('onSms args: ' + args.toString());
+          await Logger.d('onSms args: $args');
           final payload = _buildSmsPayload(args);
           if (payload != null) {
             await Logger.d('Sending SMS payload from ${payload['message_from']}');

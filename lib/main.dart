@@ -74,7 +74,7 @@ class MyApp extends StatelessWidget {
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: colorScheme.surfaceContainerHighest.withOpacity(0.3),
+        fillColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide.none,
@@ -82,7 +82,7 @@ class MyApp extends StatelessWidget {
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(
-            color: colorScheme.outline.withOpacity(0.5),
+            color: colorScheme.outline.withValues(alpha: 0.5),
           ),
         ),
         focusedBorder: OutlineInputBorder(
@@ -307,7 +307,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                     center: Alignment.center,
                     radius: 1.2,
                     colors: [
-                      colorScheme.primaryContainer.withOpacity(0.1),
+                      colorScheme.primaryContainer.withValues(alpha: 0.1),
                       colorScheme.surface,
                     ],
                   ),
@@ -336,7 +336,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                                 decoration: BoxDecoration(
                                   shape: BoxShape.circle,
                                   border: Border.all(
-                                    color: colorScheme.primary.withOpacity(0.3),
+                                    color: colorScheme.primary.withValues(alpha: 0.3),
                                     width: 2,
                                   ),
                                 ),
@@ -351,7 +351,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                                 gradient: LinearGradient(
                                   colors: [
                                     colorScheme.primary,
-                                    colorScheme.primary.withOpacity(0.8),
+                                    colorScheme.primary.withValues(alpha: 0.8),
                                   ],
                                   begin: Alignment.topLeft,
                                   end: Alignment.bottomRight,
@@ -359,7 +359,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                                 shape: BoxShape.circle,
                                 boxShadow: [
                                   BoxShadow(
-                                    color: colorScheme.primary.withOpacity(0.3),
+                                    color: colorScheme.primary.withValues(alpha: 0.3),
                                     blurRadius: 24,
                                     offset: const Offset(0, 8),
                                   ),
@@ -430,10 +430,10 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                           child: Container(
                             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
                             decoration: BoxDecoration(
-                              color: colorScheme.surfaceContainerHighest.withOpacity(0.6),
+                              color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.6),
                               borderRadius: BorderRadius.circular(24),
                               border: Border.all(
-                                color: colorScheme.outline.withOpacity(0.2),
+                                color: colorScheme.outline.withValues(alpha: 0.2),
                               ),
                             ),
                             child: Row(
@@ -475,7 +475,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                           ? Container(
                               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                               decoration: BoxDecoration(
-                                color: colorScheme.primaryContainer.withOpacity(0.5),
+                                color: colorScheme.primaryContainer.withValues(alpha: 0.5),
                                 borderRadius: BorderRadius.circular(16),
                               ),
                               child: Text(
@@ -521,7 +521,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                                   gradient: LinearGradient(
                                     colors: [
                                       colorScheme.primary,
-                                      colorScheme.primary.withOpacity(0.7),
+                                      colorScheme.primary.withValues(alpha: 0.7),
                                     ],
                                   ),
                                   borderRadius: BorderRadius.circular(2),
@@ -714,7 +714,7 @@ class _ConfigScreenState extends State<ConfigScreen> {
                 gradient: LinearGradient(
                   colors: [
                     colorScheme.primaryContainer,
-                    colorScheme.primaryContainer.withOpacity(0.7),
+                    colorScheme.primaryContainer.withValues(alpha: 0.7),
                   ],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
@@ -742,7 +742,7 @@ class _ConfigScreenState extends State<ConfigScreen> {
                         ? 'Messages are being monitored and forwarded'
                         : 'Configure settings and start the service',
                     style: theme.textTheme.bodyMedium?.copyWith(
-                      color: colorScheme.onPrimaryContainer.withOpacity(0.8),
+                      color: colorScheme.onPrimaryContainer.withValues(alpha: 0.8),
                     ),
                     textAlign: TextAlign.center,
                   ),
@@ -866,7 +866,7 @@ class _ConfigScreenState extends State<ConfigScreen> {
                       label: const Text('Stop Service'),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: Colors.red,
-                        side: BorderSide(color: Colors.red.withOpacity(0.5)),
+                        side: BorderSide(color: Colors.red.withValues(alpha: 0.5)),
                       ),
                     ),
                   
@@ -875,7 +875,7 @@ class _ConfigScreenState extends State<ConfigScreen> {
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: colorScheme.surfaceContainerHighest.withOpacity(0.5),
+                      color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Row(
@@ -1027,7 +1027,7 @@ class _ModernCard extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: colorScheme.primaryContainer.withOpacity(0.5),
+                    color: colorScheme.primaryContainer.withValues(alpha: 0.5),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Icon(
@@ -1099,17 +1099,17 @@ class _ModernPermissionRow extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: ok 
-            ? Colors.green.withOpacity(0.1)
+            ? Colors.green.withValues(alpha: 0.1)
             : (isOptional 
-                ? colorScheme.surfaceContainerHighest.withOpacity(0.5)
-                : Colors.orange.withOpacity(0.1)),
+                ? colorScheme.surfaceContainerHighest.withValues(alpha: 0.5)
+                : Colors.orange.withValues(alpha: 0.1)),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: ok 
-              ? Colors.green.withOpacity(0.3)
+              ? Colors.green.withValues(alpha: 0.3)
               : (isOptional 
-                  ? colorScheme.outline.withOpacity(0.2)
-                  : Colors.orange.withOpacity(0.3)),
+                  ? colorScheme.outline.withValues(alpha: 0.2)
+                  : Colors.orange.withValues(alpha: 0.3)),
         ),
       ),
       child: Row(
@@ -1117,7 +1117,7 @@ class _ModernPermissionRow extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: statusColor.withOpacity(0.2),
+              color: statusColor.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(
@@ -1154,7 +1154,7 @@ class _ModernPermissionRow extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: statusColor.withOpacity(0.2),
+                  color: statusColor.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Row(
@@ -1242,15 +1242,15 @@ class _GitHubInfoCardState extends State<_GitHubInfoCard> {
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
-                  colorScheme.primaryContainer.withOpacity(0.3),
-                  colorScheme.primaryContainer.withOpacity(0.1),
+                  colorScheme.primaryContainer.withValues(alpha: 0.3),
+                  colorScheme.primaryContainer.withValues(alpha: 0.1),
                 ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: colorScheme.outline.withOpacity(0.2),
+                color: colorScheme.outline.withValues(alpha: 0.2),
               ),
             ),
             child: Column(
@@ -1286,7 +1286,7 @@ class _GitHubInfoCardState extends State<_GitHubInfoCard> {
                             margin: const EdgeInsets.only(top: 4),
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                             decoration: BoxDecoration(
-                              color: colorScheme.primary.withOpacity(0.2),
+                              color: colorScheme.primary.withValues(alpha: 0.2),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Text(
@@ -1309,7 +1309,7 @@ class _GitHubInfoCardState extends State<_GitHubInfoCard> {
                     color: colorScheme.surface,
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: colorScheme.outline.withOpacity(0.3),
+                      color: colorScheme.outline.withValues(alpha: 0.3),
                     ),
                   ),
                   child: Row(
@@ -1377,10 +1377,10 @@ class _GitHubInfoCardState extends State<_GitHubInfoCard> {
                   child: Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: colorScheme.surfaceContainerHighest.withOpacity(0.5),
+                      color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: colorScheme.outline.withOpacity(0.1),
+                        color: colorScheme.outline.withValues(alpha: 0.1),
                       ),
                     ),
                     child: Row(
@@ -1416,10 +1416,10 @@ class _GitHubInfoCardState extends State<_GitHubInfoCard> {
                   child: Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: colorScheme.surfaceContainerHighest.withOpacity(0.5),
+                      color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: colorScheme.outline.withOpacity(0.1),
+                        color: colorScheme.outline.withValues(alpha: 0.1),
                       ),
                     ),
                     child: Row(

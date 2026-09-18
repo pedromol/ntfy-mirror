@@ -105,7 +105,7 @@ class _QueueScreenState extends State<QueueScreen> {
                   Container(
                     padding: const EdgeInsets.all(24),
                     decoration: BoxDecoration(
-                      color: colorScheme.surfaceContainerHighest.withOpacity(0.5),
+                      color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Icon(
@@ -144,7 +144,7 @@ class _QueueScreenState extends State<QueueScreen> {
                   gradient: LinearGradient(
                     colors: [
                       colorScheme.primaryContainer,
-                      colorScheme.primaryContainer.withOpacity(0.7),
+                      colorScheme.primaryContainer.withValues(alpha: 0.7),
                     ],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
@@ -173,7 +173,7 @@ class _QueueScreenState extends State<QueueScreen> {
                           Text(
                             'Waiting to be sent to endpoint',
                             style: theme.textTheme.bodySmall?.copyWith(
-                              color: colorScheme.onPrimaryContainer.withOpacity(0.8),
+                              color: colorScheme.onPrimaryContainer.withValues(alpha: 0.8),
                             ),
                           ),
                         ],
@@ -236,7 +236,7 @@ class _QueueScreenState extends State<QueueScreen> {
                                 Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                   decoration: BoxDecoration(
-                                    color: Colors.orange.withOpacity(0.2),
+                                    color: Colors.orange.withValues(alpha: 0.2),
                                     borderRadius: BorderRadius.circular(12),
                                   ),
                                   child: Row(
@@ -264,7 +264,7 @@ class _QueueScreenState extends State<QueueScreen> {
                             Container(
                               padding: const EdgeInsets.all(12),
                               decoration: BoxDecoration(
-                                color: colorScheme.surfaceContainerHighest.withOpacity(0.5),
+                                color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Text(
@@ -422,7 +422,7 @@ class _LogsScreenState extends State<LogsScreen> {
             margin: const EdgeInsets.all(16),
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: colorScheme.surfaceContainerHighest.withOpacity(0.5),
+              color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
                 color: colorScheme.outlineVariant,
@@ -487,7 +487,7 @@ class _LogsScreenState extends State<LogsScreen> {
                         Container(
                           padding: const EdgeInsets.all(24),
                           decoration: BoxDecoration(
-                            color: colorScheme.surfaceContainerHighest.withOpacity(0.5),
+                            color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: Icon(
@@ -526,7 +526,7 @@ class _LogsScreenState extends State<LogsScreen> {
                         gradient: LinearGradient(
                           colors: [
                             colorScheme.secondaryContainer,
-                            colorScheme.secondaryContainer.withOpacity(0.7),
+                            colorScheme.secondaryContainer.withValues(alpha: 0.7),
                           ],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
@@ -555,7 +555,7 @@ class _LogsScreenState extends State<LogsScreen> {
                                 Text(
                                   _auto ? 'Auto-refreshing active' : 'Manual refresh mode',
                                   style: theme.textTheme.bodySmall?.copyWith(
-                                    color: colorScheme.onSecondaryContainer.withOpacity(0.8),
+                                    color: colorScheme.onSecondaryContainer.withValues(alpha: 0.8),
                                   ),
                                 ),
                               ],
@@ -565,7 +565,7 @@ class _LogsScreenState extends State<LogsScreen> {
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                               decoration: BoxDecoration(
-                                color: Colors.green.withOpacity(0.2),
+                                color: Colors.green.withValues(alpha: 0.2),
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: Row(
@@ -607,8 +607,9 @@ class _LogsScreenState extends State<LogsScreen> {
                           
                           // Determine log level for styling
                           LogLevel level = LogLevel.info;
-                          if (body.toLowerCase().contains('error')) level = LogLevel.error;
-                          else if (body.toLowerCase().contains('warning')) level = LogLevel.warning;
+                          if (body.toLowerCase().contains('error')) {
+                            level = LogLevel.error;
+                          } else if (body.toLowerCase().contains('warning')) level = LogLevel.warning;
                           else if (body.toLowerCase().contains('debug')) level = LogLevel.debug;
 
                           return _LogEntry(
@@ -685,7 +686,7 @@ class _LogEntry extends StatelessWidget {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(8),
         side: BorderSide(
-          color: levelColor.withOpacity(0.2),
+          color: levelColor.withValues(alpha: 0.2),
           width: 1,
         ),
       ),
@@ -701,7 +702,7 @@ class _LogEntry extends StatelessWidget {
                   height: 24,
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
-                    color: levelColor.withOpacity(0.1),
+                    color: levelColor.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Text(
@@ -716,7 +717,7 @@ class _LogEntry extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
-                    color: levelColor.withOpacity(0.1),
+                    color: levelColor.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Row(
@@ -743,7 +744,7 @@ class _LogEntry extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: colorScheme.surfaceContainerHighest.withOpacity(0.5),
+                      color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Row(
@@ -772,7 +773,7 @@ class _LogEntry extends StatelessWidget {
               width: double.infinity,
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: colorScheme.surfaceContainerHighest.withOpacity(0.3),
+                color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(
