@@ -2,6 +2,8 @@ Você tem acesso completo ao repositório message-mirror (Flutter + Kotlin) que 
 
 Implemente a funcionalidade “Optional auth headers” descrita no roadmap do projeto, permitindo que o usuário configure autenticação para o endpoint HTTP. Requisitos:
 
+A cada etapa realizada, descoberta feita ou problema encontrado, MUST escrever no final do arquivo prompt.md
+
 Funcionalidade
 Tipos de autenticação suportados
 
