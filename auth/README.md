@@ -45,4 +45,3 @@ Maintain backward compatibility: no auth config = None.
 - Dart code: models/settings, UI, HTTP logic
 - Optional Kotlin adjustments (storage)
 - README/AUTH.md examples for ntfy self-hosted
-
