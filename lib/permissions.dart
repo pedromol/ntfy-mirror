@@ -15,6 +15,20 @@ class PermissionService {
     await _channel.invokeMethod('openNotificationAccess');
   }
 
+  /// Whether the native [NotificationListenerService] is currently bound.
+  /// Notification access can stay granted while an OEM drops the bind
+  /// (MIUI/HyperOS autostart restrictions), which silently breaks mirroring.
+  static Future<bool> isListenerConnected() async {
+    if (!Platform.isAndroid) return true;
+    return await _channel.invokeMethod('isListenerConnected') as bool;
+  }
+
+  /// Asks the system to rebind the listener (no-op when access is not granted).
+  static Future<void> rebindListener() async {
+    if (!Platform.isAndroid) return;
+    await _channel.invokeMethod('rebindListener');
+  }
+
   static Future<bool> hasPostNotifications() async {
     if (!Platform.isAndroid) return true;
     return await _channel.invokeMethod('hasPostNotifications') as bool;

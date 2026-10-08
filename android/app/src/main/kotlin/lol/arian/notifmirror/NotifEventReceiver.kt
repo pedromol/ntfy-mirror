@@ -1,4 +1,4 @@
-package lol.arian.notifmirror
+package br.mol.net.br
 
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -29,9 +29,10 @@ class NotifEventReceiver : BroadcastReceiver() {
             "badgeIconType" to intent.getIntExtra("badgeIconType", -1),
             "actions" to (intent.getStringExtra("actions") ?: ""),
             "largeIcon" to (intent.getStringExtra("largeIcon") ?: ""),
+            "smallIcon" to (intent.getStringExtra("smallIcon") ?: ""),
             "picture" to (intent.getStringExtra("picture") ?: "")
         )
-        try { LogStore.append(context, "NotifEventReceiver -> ${data["title"]}") } catch (_: Exception) {}
+        try { LogStore.append(context, "NotifEventReceiver -> ${data["app"]}") } catch (_: Exception) {}
 
         // Try active UI engine first
         var ch: MethodChannel? = null

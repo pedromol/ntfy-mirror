@@ -1,4 +1,4 @@
-package lol.arian.notifmirror
+package br.mol.net.br
 
 import android.content.Context
 import org.json.JSONObject
@@ -50,7 +50,7 @@ object ApiSender {
 
         Thread {
             try {
-                LogStore.append(context, "ApiSender POST → $endpoint from='$from' len=${body.length}")
+                LogStore.append(context, "ApiSender POST → ${sanitizeUrl(endpoint)} from='$from' len=${body.length}")
                 val url = URL(endpoint)
                 val conn = (url.openConnection() as HttpURLConnection).apply {
                     requestMethod = "POST"
@@ -59,6 +59,7 @@ object ApiSender {
                     doOutput = true
                     setRequestProperty("Content-Type", "application/json")
                 }
+                authHeaders(context).forEach { (k, v) -> conn.setRequestProperty(k, v) }
                 OutputStreamWriter(conn.outputStream).use { it.write(payload.toString()) }
                 val code = conn.responseCode
                 val resp = try {
@@ -80,6 +81,36 @@ object ApiSender {
     }
 
     private fun escape(v: String): String = v
+
+    private fun authHeaders(context: Context): Map<String, String> {
+        val prefs = context.getSharedPreferences("msg_mirror", Context.MODE_PRIVATE)
+        val enc = prefs.getString("auth_enc", null) ?: return emptyMap()
+        val json = try { JSONObject(SecureAuthStore.decrypt(enc)) } catch (_: Exception) { return emptyMap() }
+        return try {
+            when (json.optString("type")) {
+                "Bearer" -> mapOf("Authorization" to "Bearer ${json.optString("token", "").trim()}")
+                "API key" -> mapOf(json.optString("headerName", "X-API-Key").trim() to json.optString("apiKey", ""))
+                "Basic" -> mapOf(
+                    "Authorization" to "Basic " + android.util.Base64.encodeToString(
+                        "${json.optString("username")}:${json.optString("password")}".toByteArray(),
+                        android.util.Base64.NO_WRAP
+                    )
+                )
+                else -> emptyMap()
+            }
+        } catch (_: Exception) { emptyMap() }
+    }
+
+    private fun sanitizeUrl(raw: String): String {
+        return try {
+            val uri = java.net.URI(raw)
+            if (uri.userInfo == null) {
+                raw
+            } else {
+                java.net.URI(uri.scheme, null, uri.host, uri.port, uri.path, uri.query, uri.fragment).toString()
+            }
+        } catch (_: Exception) { raw }
+    }
 }
 
 

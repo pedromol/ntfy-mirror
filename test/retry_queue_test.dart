@@ -2,9 +2,9 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:flutter/widgets.dart';
+
 import 'package:http/http.dart' as http;
-import 'package:message_mirror/message_stream.dart';
+import 'package:ntfy_mirror/message_stream.dart';
 
 class _FakeClient extends http.BaseClient {
   bool succeed;
@@ -52,7 +52,7 @@ void main() {
   });
 
   test('restore on start schedules retry', () async {
-    WidgetsFlutterBinding.ensureInitialized();
+    TestWidgetsFlutterBinding.ensureInitialized();
     final store = _MemoryStore();
     await store.set([_payload(1)]);
     final client = _FakeClient(succeed: false);
@@ -64,7 +64,7 @@ void main() {
   });
 
   test('force flush drains when server recovers', () async {
-    WidgetsFlutterBinding.ensureInitialized();
+    TestWidgetsFlutterBinding.ensureInitialized();
     final store = _MemoryStore();
     final client = _FakeClient(succeed: false);
     final s = MessageStream(reception: '', endpoint: 'https://example.invalid', httpClient: client, queueStore: store);

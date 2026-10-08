@@ -31,6 +31,37 @@ jobs:
       - name: Flutter pub get
         run: flutter pub get
 
+      - name: Prepare release signing
+        run: |
+          set -euo pipefail
+          if [[ -n "${KEYSTORE_BASE64:-}" ]]; then
+            echo "$KEYSTORE_BASE64" | base64 -d > "$HOME/upload-keystore.jks"
+            cat > android/key.properties <<EOF
+            storeFile=$HOME/upload-keystore.jks
+            storePassword=$KEYSTORE_PASSWORD
+            keyAlias=$KEYSTORE_ALIAS
+            keyPassword=$KEYSTORE_PASSWORD
+            EOF
+          else
+            KEYSTORE_PASS="$(openssl rand -hex 16)"
+            keytool -genkeypair -v -keystore "$HOME/upload-keystore.jks" \
+              -alias upload -keyalg RSA -keysize 2048 -validity 10000 \
+              -storepass "$KEYSTORE_PASS" -keypass "$KEYSTORE_PASS" \
+              -dname "CN=Ntfy Mirror CI,O=Ntfy Mirror,C=BR"
+            cat > android/key.properties <<EOF
+            storeFile=$HOME/upload-keystore.jks
+            storePassword=$KEYSTORE_PASS
+            keyAlias=upload
+            keyPassword=$KEYSTORE_PASS
+            EOF
+            echo "No KEYSTORE_BASE64 secret set: generated an ephemeral signing key for this run."
+            echo "Set KEYSTORE_BASE64 / KEYSTORE_PASSWORD / KEYSTORE_ALIAS secrets so releases keep a stable signature."
+          fi
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEYSTORE_ALIAS: ${{ secrets.KEYSTORE_ALIAS }}
+
       - name: Build split-per-ABI APKs (release)
         run: flutter build apk --release --split-per-abi -t lib/main.dart
 
@@ -45,9 +76,9 @@ jobs:
           fi
           VERSION_NO_V="${VERSION#v}"
           mkdir -p dist
-          cp build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk "dist/message-mirror-${VERSION_NO_V}-armeabi-v7a.apk"
-          cp build/app/outputs/flutter-apk/app-arm64-v8a-release.apk "dist/message-mirror-${VERSION_NO_V}-arm64-v8a.apk"
-          cp build/app/outputs/flutter-apk/app-x86_64-release.apk    "dist/message-mirror-${VERSION_NO_V}-x86_64.apk"
+          cp build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk "dist/ntfy-mirror-${VERSION_NO_V}-armeabi-v7a.apk"
+          cp build/app/outputs/flutter-apk/app-arm64-v8a-release.apk "dist/ntfy-mirror-${VERSION_NO_V}-arm64-v8a.apk"
+          cp build/app/outputs/flutter-apk/app-x86_64-release.apk    "dist/ntfy-mirror-${VERSION_NO_V}-x86_64.apk"
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4

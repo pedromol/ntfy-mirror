@@ -1,4 +1,4 @@
-package lol.arian.notifmirror
+package br.mol.net.br
 
 import android.content.BroadcastReceiver
 import android.content.Context

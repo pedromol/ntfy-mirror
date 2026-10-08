@@ -1,4 +1,4 @@
-import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -114,7 +114,7 @@ class _AppSelectorScreenState extends State<AppSelectorScreen> {
               Container(
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
-                  color: colorScheme.primaryContainer.withOpacity(0.5),
+                  color: colorScheme.primaryContainer.withValues(alpha: 0.5),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: CircularProgressIndicator(
@@ -190,7 +190,7 @@ class _AppSelectorScreenState extends State<AppSelectorScreen> {
                   gradient: LinearGradient(
                     colors: [
                       colorScheme.primaryContainer,
-                      colorScheme.primaryContainer.withOpacity(0.7),
+                      colorScheme.primaryContainer.withValues(alpha: 0.7),
                     ],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
@@ -219,7 +219,7 @@ class _AppSelectorScreenState extends State<AppSelectorScreen> {
                               },
                             ),
                             filled: true,
-                            fillColor: colorScheme.surface.withOpacity(0.9),
+                            fillColor: colorScheme.surface.withValues(alpha: 0.9),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(16),
                               borderSide: BorderSide.none,
@@ -242,7 +242,7 @@ class _AppSelectorScreenState extends State<AppSelectorScreen> {
               margin: const EdgeInsets.all(16),
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: colorScheme.surfaceContainerHighest.withOpacity(0.5),
+                color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
                   color: colorScheme.outlineVariant,
@@ -311,7 +311,7 @@ class _AppSelectorScreenState extends State<AppSelectorScreen> {
                     Container(
                       padding: const EdgeInsets.all(24),
                       decoration: BoxDecoration(
-                        color: colorScheme.surfaceContainerHighest.withOpacity(0.5),
+                        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Icon(
@@ -391,7 +391,7 @@ class _AppSelectorScreenState extends State<AppSelectorScreen> {
           ),
           boxShadow: [
             BoxShadow(
-              color: colorScheme.shadow.withOpacity(0.1),
+              color: colorScheme.shadow.withValues(alpha: 0.1),
               blurRadius: 8,
               offset: const Offset(0, -2),
             ),
@@ -472,13 +472,13 @@ class _CompactAppCard extends StatelessWidget {
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
             color: isSelected 
-                ? colorScheme.primaryContainer.withOpacity(0.2)
-                : colorScheme.surfaceContainerHighest.withOpacity(0.3),
+                ? colorScheme.primaryContainer.withValues(alpha: 0.2)
+                : colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
               color: isSelected 
-                  ? colorScheme.primary.withOpacity(0.6)
-                  : colorScheme.outlineVariant.withOpacity(0.5),
+                  ? colorScheme.primary.withValues(alpha: 0.6)
+                  : colorScheme.outlineVariant.withValues(alpha: 0.5),
               width: isSelected ? 1.5 : 0.5,
             ),
           ),
@@ -490,7 +490,7 @@ class _CompactAppCard extends StatelessWidget {
                 height: 40,
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(10),
-                  color: colorScheme.surface.withOpacity(0.8),
+                  color: colorScheme.surface.withValues(alpha: 0.8),
                   image: icon != null ? DecorationImage(
                     image: icon!,
                     fit: BoxFit.cover,
@@ -551,7 +551,7 @@ class _CompactAppCard extends StatelessWidget {
                   border: Border.all(
                     color: isSelected 
                         ? colorScheme.primary 
-                        : colorScheme.outline.withOpacity(0.6),
+                        : colorScheme.outline.withValues(alpha: 0.6),
                     width: 2,
                   ),
                   borderRadius: BorderRadius.circular(6),

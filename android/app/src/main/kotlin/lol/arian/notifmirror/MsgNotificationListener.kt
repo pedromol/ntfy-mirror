@@ -1,4 +1,4 @@
-package lol.arian.notifmirror
+package br.mol.net.br
 
 import android.os.Bundle
 import android.app.Notification
@@ -9,7 +9,9 @@ import io.flutter.plugin.common.MethodChannel
 
 class MsgNotificationListener : NotificationListenerService() {
     companion object {
-        const val ACTION = "lol.arian.notifmirror.NOTIF_EVENT"
+        const val ACTION = "br.mol.net.br.NOTIF_EVENT"
+        @Volatile
+        var isConnected = false
         @Volatile
         var channel: MethodChannel? = null
         private val pendingEvents: MutableList<Map<String, Any?>> = mutableListOf()
@@ -70,6 +72,12 @@ class MsgNotificationListener : NotificationListenerService() {
             val bmp = extras.get("android.picture") as? android.graphics.Bitmap
             if (bmp != null) android.util.Base64.encodeToString(toPngBytes(bmp), android.util.Base64.NO_WRAP) else ""
         } catch (_: Exception) { "" }
+        // Status bar (small) icon — usually a tinted vector, rendered as PNG
+        val smallIconB64: String = try {
+            val ic = n.smallIcon
+            val dr = if (ic != null) ic.loadDrawable(this) else null
+            if (dr != null) android.util.Base64.encodeToString(toPngBytes(drawableToBitmap(dr)), android.util.Base64.NO_WRAP) else ""
+        } catch (_: Exception) { "" }
 
         val textResolved = if (text.isNotEmpty()) text else if (bigText.isNotEmpty()) bigText else lines
         val isOngoing = (n.flags and Notification.FLAG_ONGOING_EVENT) != 0
@@ -77,14 +85,20 @@ class MsgNotificationListener : NotificationListenerService() {
             try { LogStore.append(this, "skip ongoing notification for $app") } catch (_: Exception) {}
             return
         }
-        // Filter by allowed packages persisted in prefs
+        // Round-trip validation: the local test notification carries the pending token.
+        // It must NOT be dropped by the allowed-packages filter, otherwise the test
+        // message would never come back. Everything else keeps the normal filter.
+        val isTestNotification = ValidationCoordinator.matchesPendingEcho("$title $text $bigText $lines")
+        if (isTestNotification) {
+            try { LogStore.append(this, "validation test notification detected, bypassing app filter") } catch (_: Exception) {}
+        }
         val prefs = getSharedPreferences("msg_mirror", MODE_PRIVATE)
         val allowed = prefs.getStringSet("allowed_packages", setOf("com.google.android.apps.messaging", "com.google.android.dialer")) ?: setOf()
-        if (allowed.isNotEmpty() && !allowed.contains(app)) {
+        if (!isTestNotification && allowed.isNotEmpty() && !allowed.contains(app)) {
             try { LogStore.append(this, "skip package $app (not allowed)") } catch (_: Exception) {}
             return
         }
-        try { LogStore.append(this, "emit onNotification: title='$title' textLen=${textResolved.length}") } catch (_: Exception) {}
+        try { LogStore.append(this, "emit onNotification: app=$app textLen=${textResolved.length}") } catch (_: Exception) {}
         val intent = Intent(ACTION).apply {
             putExtra("app", app)
             putExtra("title", title)
@@ -105,7 +119,9 @@ class MsgNotificationListener : NotificationListenerService() {
             putExtra("badgeIconType", badgeIconType)
             putExtra("actions", actionTitles)
             putExtra("largeIcon", largeIconB64)
+            putExtra("smallIcon", smallIconB64)
             putExtra("picture", pictureB64)
+            putExtra("isTest", isTestNotification)
         }
         sendBroadcast(intent)
 
@@ -130,7 +146,9 @@ class MsgNotificationListener : NotificationListenerService() {
             "badgeIconType" to badgeIconType,
             "actions" to actionTitles,
             "largeIcon" to largeIconB64,
-            "picture" to pictureB64
+            "smallIcon" to smallIconB64,
+            "picture" to pictureB64,
+            "isTest" to isTestNotification
         )
         val ch = channel
         if (ch != null) {
@@ -139,6 +157,11 @@ class MsgNotificationListener : NotificationListenerService() {
             synchronized(pendingEvents) { pendingEvents.add(payload) }
             // As a final fallback, send with native HTTP to avoid losing events
             ApiSender.send(this, title, textResolved, sbn.postTime)
+        }
+
+        if (isTestNotification) {
+            // The test message came back — notify the running validation.
+            ValidationCoordinator.maybeDeliverEcho(this, "$title $text $bigText $lines")
         }
     }
 
@@ -149,16 +172,19 @@ class MsgNotificationListener : NotificationListenerService() {
 
     override fun onDestroy() {
         super.onDestroy()
+        isConnected = false
         try { LogStore.append(this, "MsgListener onDestroy") } catch (_: Exception) {}
     }
 
     override fun onListenerConnected() {
         super.onListenerConnected()
+        isConnected = true
         try { LogStore.append(this, "MsgListener onListenerConnected") } catch (_: Exception) {}
     }
 
     override fun onListenerDisconnected() {
         super.onListenerDisconnected()
+        isConnected = false
         try { LogStore.append(this, "MsgListener onListenerDisconnected") } catch (_: Exception) {}
     }
 }
