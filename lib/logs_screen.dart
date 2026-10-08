@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:message_mirror/logger.dart';
-import 'package:message_mirror/prefs.dart';
+import 'package:ntfy_mirror/logger.dart';
+import 'package:ntfy_mirror/prefs.dart';
 
 class LogsScreen extends StatefulWidget {
   const LogsScreen({super.key});
@@ -609,8 +609,11 @@ class _LogsScreenState extends State<LogsScreen> {
                           LogLevel level = LogLevel.info;
                           if (body.toLowerCase().contains('error')) {
                             level = LogLevel.error;
-                          } else if (body.toLowerCase().contains('warning')) level = LogLevel.warning;
-                          else if (body.toLowerCase().contains('debug')) level = LogLevel.debug;
+                          } else if (body.toLowerCase().contains('warning')) {
+                            level = LogLevel.warning;
+                          } else if (body.toLowerCase().contains('debug')) {
+                            level = LogLevel.debug;
+                          }
 
                           return _LogEntry(
                             timestamp: ts,

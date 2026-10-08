@@ -1,4 +1,4 @@
-package lol.arian.notifmirror
+package br.mol.net.br
 
 import android.app.Notification
 import android.app.NotificationChannel
@@ -41,21 +41,21 @@ class AlwaysOnService : Service() {
             initFlutterEngine()
         }
         try {
-            val prefs = getSharedPreferences("msg_mirror", MODE_PRIVATE)
+            val prefs = getSharedPreferences("ntfy_mirror", MODE_PRIVATE)
             prefs.edit().putBoolean("service_running", true).apply()
         } catch (_: Exception) {}
     }
 
     private fun startAsForeground(): Boolean {
-        val channelId = "message_mirror"
+        val channelId = "ntfy_mirror"
         val mgr = getSystemService(NotificationManager::class.java)
         if (Build.VERSION.SDK_INT >= 26) {
-            val chan = NotificationChannel(channelId, "Message Mirror", NotificationManager.IMPORTANCE_MIN)
+            val chan = NotificationChannel(channelId, "Ntfy Mirror", NotificationManager.IMPORTANCE_MIN)
             mgr.createNotificationChannel(chan)
         }
         val notif: Notification = NotificationCompat.Builder(this, channelId)
             .setOngoing(true)
-            .setContentTitle("Message Mirror running")
+            .setContentTitle("Ntfy Mirror running")
             .setSmallIcon(android.R.drawable.stat_notify_sync)
             .build()
         return try {
@@ -65,7 +65,7 @@ class AlwaysOnService : Service() {
         } catch (e: Exception) {
             try {
                 LogStore.append(this, "Failed to start foreground service: ${e.message ?: e.javaClass.simpleName}. If this persists, ensure required permissions are granted and app is up to date.")
-                val prefs = getSharedPreferences("msg_mirror", MODE_PRIVATE)
+                val prefs = getSharedPreferences("ntfy_mirror", MODE_PRIVATE)
                 prefs.edit().putBoolean("service_running", false).apply()
             } catch (_: Exception) {}
             stopSelf()
@@ -97,7 +97,7 @@ class AlwaysOnService : Service() {
         }
 
         // Prefs channel
-        val prefs = getSharedPreferences("msg_mirror", MODE_PRIVATE)
+        val prefs = getSharedPreferences("ntfy_mirror", MODE_PRIVATE)
         MethodChannel(messenger, "msg_mirror_prefs").setMethodCallHandler { call, result ->
             when (call.method) {
                 "getReception" -> result.success(prefs.getString("reception", ""))
@@ -110,6 +110,30 @@ class AlwaysOnService : Service() {
                 "setEndpoint" -> {
                     val v = call.arguments as? String ?: ""
                     prefs.edit().putString("endpoint", v).apply()
+                    result.success(null)
+                }
+                "getAuth" -> {
+                    val enc = prefs.getString("auth_enc", null)
+                    if (enc.isNullOrEmpty()) {
+                        result.success("")
+                    } else {
+                        result.success(
+                            try {
+                                SecureAuthStore.decrypt(enc)
+                            } catch (e: Exception) {
+                                try { LogStore.append(this, "getAuth decrypt failed: ${e.message ?: e.javaClass.simpleName}") } catch (_: Exception) {}
+                                null
+                            }
+                        )
+                    }
+                }
+                "setAuth" -> {
+                    val v = call.arguments as? String ?: ""
+                    if (v.isBlank()) {
+                        prefs.edit().remove("auth_enc").apply()
+                    } else {
+                        prefs.edit().putString("auth_enc", SecureAuthStore.encrypt(v)).apply()
+                    }
                     result.success(null)
                 }
                 "getSmsEnabled" -> result.success(prefs.getBoolean("sms_enabled", true))
@@ -140,14 +164,37 @@ class AlwaysOnService : Service() {
                 }
                 "getPayloadTemplate" -> {
                     val def = (
-                        """
-                        {
-                          "message_body": "{{body}}",
-                          "message_from": "{{from}}",
-                          "message_date": "{{date}}"
-                        }
-                        """
-                    ).trimIndent()
+                            """
+                            {
+  "message_body": "{{body}}",
+  "message_from": "{{from}}",
+  "message_date": "{{date}}",
+  "app": "{{app}}",
+  "type": "{{type}}",
+  "reception": "{{reception}}",
+  "title": "{{title}}",
+  "text": "{{text}}",
+  "big_text": "{{bigText}}",
+  "sub_text": "{{subText}}",
+  "summary_text": "{{summaryText}}",
+  "info_text": "{{infoText}}",
+  "category": "{{category}}",
+  "priority": "{{priority}}",
+  "channel_id": "{{channelId}}",
+  "visibility": "{{visibility}}",
+  "color": "{{color}}",
+  "group_key": "{{groupKey}}",
+  "is_group_summary": "{{isGroupSummary}}",
+  "when": "{{when}}",
+  "actions": "{{actions}}",
+  "people": "{{people}}",
+  "badge_icon_type": "{{badgeIconType}}",
+  "small_icon_base64": "{{smallIcon}}",
+  "large_icon_base64": "{{largeIcon}}",
+  "picture_base64": "{{picture}}"
+}
+                            """
+                        ).trimIndent()
                     result.success(prefs.getString("payload_template", def))
                 }
                 "setPayloadTemplate" -> {
@@ -193,7 +240,7 @@ class AlwaysOnService : Service() {
         super.onDestroy()
         LogStore.append(this, "AlwaysOnService onDestroy")
         try {
-            val prefs = getSharedPreferences("msg_mirror", MODE_PRIVATE)
+            val prefs = getSharedPreferences("ntfy_mirror", MODE_PRIVATE)
             prefs.edit().putBoolean("service_running", false).apply()
         } catch (_: Exception) {}
         smsObserver?.let {

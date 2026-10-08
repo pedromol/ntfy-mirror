@@ -8,10 +8,11 @@
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
     <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES"/>
     <application
-        android:label="Message Mirror"
+        android:label="Ntfy Mirror"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
         android:roundIcon="@mipmap/ic_launcher_round"
+        android:allowBackup="false"
         >
     
         <service
@@ -21,7 +22,7 @@
 
         <service
             android:name=".MsgNotificationListener"
-            android:label="Message Mirror"
+            android:label="Ntfy Mirror"
             android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE"
             android:exported="true"
             android:enabled="true">
@@ -32,7 +33,7 @@
 
         <receiver android:name=".NotifEventReceiver" android:exported="false">
             <intent-filter>
-                <action android:name="lol.arian.notifmirror.NOTIF_EVENT" />
+                <action android:name="br.mol.net.br.NOTIF_EVENT" />
             </intent-filter>
         </receiver>
 

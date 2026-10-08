@@ -3,8 +3,8 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:message_mirror/logs_screen.dart';
-import 'package:message_mirror/payload_template_screen.dart';
+import 'package:ntfy_mirror/logs_screen.dart';
+import 'package:ntfy_mirror/payload_template_screen.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

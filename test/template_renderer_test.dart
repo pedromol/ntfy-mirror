@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:message_mirror/template_renderer.dart';
+import 'package:ntfy_mirror/template_renderer.dart';
 
 void main() {
   group('TemplateRenderer', () {

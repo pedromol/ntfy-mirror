@@ -1,4 +1,4 @@
-package lol.arian.notifmirror
+package br.mol.net.br
 
 import android.content.Intent
 import android.os.Bundle
@@ -17,6 +17,14 @@ import android.graphics.drawable.Drawable
 import android.util.LruCache
 import kotlin.concurrent.thread
 import java.io.ByteArrayOutputStream
+import android.security.keystore.KeyGenParameterSpec
+import android.security.keystore.KeyProperties
+import android.util.Base64
+import java.security.KeyStore
+import javax.crypto.Cipher
+import javax.crypto.KeyGenerator
+import javax.crypto.SecretKey
+import javax.crypto.spec.GCMParameterSpec
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
@@ -28,6 +36,7 @@ class MainActivity : FlutterActivity() {
     private val permChannelName = "msg_mirror_perm"
     private val logsChannelName = "msg_mirror_logs"
     private val appsChannelName = "msg_mirror_apps"
+    private val testChannelName = "msg_mirror_test"
 
     // In-memory icon cache to avoid repeated decoding/compression
     private val iconCache = LruCache<String, ByteArray>(200)
@@ -86,6 +95,48 @@ class MainActivity : FlutterActivity() {
                             result.success(null)
                         }
                     }
+                    "postTestNotification" -> {
+                        // Round-trip validation: post a local notification carrying the token.
+                        val token = (call.arguments as? String) ?: ""
+                        if (token.isNotEmpty()) {
+                            try { ValidationCoordinator.postTestNotification(this, token) } catch (_: Exception) {}
+                        }
+                        result.success(null)
+                    }
+                    "cancelTestNotification" -> {
+                        // Remove the test notification and disarm any pending validation.
+                        try { ValidationCoordinator.cancelTestNotification(this) } catch (_: Exception) {}
+                        result.success(null)
+                    }
+                    else -> result.notImplemented()
+                }
+            }
+
+        // Round-trip validation channel used by Dart (`MessageStream._testChannel`).
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, testChannelName)
+            .setMethodCallHandler { call, result ->
+                when (call.method) {
+                    "postTestNotification" -> {
+                        val token = (call.arguments as? String) ?: ""
+                        if (token.isEmpty()) {
+                            result.error("bad_token", "Validation token is empty", null)
+                            return@setMethodCallHandler
+                        }
+                        if (!hasPostNotifications()) {
+                            result.error("notifications_disabled", "Notifications are disabled for this app", null)
+                            return@setMethodCallHandler
+                        }
+                        try {
+                            ValidationCoordinator.postTestNotification(this, token)
+                            result.success(null)
+                        } catch (e: Exception) {
+                            result.error("post_failed", e.message ?: e.javaClass.simpleName, null)
+                        }
+                    }
+                    "cancelTestNotification" -> {
+                        try { ValidationCoordinator.cancelTestNotification(this) } catch (_: Exception) {}
+                        result.success(null)
+                    }
                     else -> result.notImplemented()
                 }
             }
@@ -108,6 +159,30 @@ class MainActivity : FlutterActivity() {
                     "setEndpoint" -> {
                         val v = call.arguments as? String ?: ""
                         prefs.edit().putString("endpoint", v).apply()
+                        result.success(null)
+                    }
+                    "getAuth" -> {
+                        val enc = prefs.getString("auth_enc", null)
+                        if (enc.isNullOrEmpty()) {
+                            result.success("")
+                        } else {
+                            result.success(
+                                try {
+                                    SecureAuthStore.decrypt(enc)
+                                } catch (e: Exception) {
+                                    try { LogStore.append(this, "getAuth decrypt failed: ${e.message ?: e.javaClass.simpleName}") } catch (_: Exception) {}
+                                    null
+                                }
+                            )
+                        }
+                    }
+                    "setAuth" -> {
+                        val v = call.arguments as? String ?: ""
+                        if (v.isBlank()) {
+                            prefs.edit().remove("auth_enc").apply()
+                        } else {
+                            prefs.edit().putString("auth_enc", SecureAuthStore.encrypt(v)).apply()
+                        }
                         result.success(null)
                     }
                     "getSmsEnabled" -> {
@@ -139,10 +214,33 @@ class MainActivity : FlutterActivity() {
                         val def = (
                             """
                             {
-                              "message_body": "{{body}}",
-                              "message_from": "{{from}}",
-                              "message_date": "{{date}}"
-                            }
+  "message_body": "{{body}}",
+  "message_from": "{{from}}",
+  "message_date": "{{date}}",
+  "app": "{{app}}",
+  "type": "{{type}}",
+  "reception": "{{reception}}",
+  "title": "{{title}}",
+  "text": "{{text}}",
+  "big_text": "{{bigText}}",
+  "sub_text": "{{subText}}",
+  "summary_text": "{{summaryText}}",
+  "info_text": "{{infoText}}",
+  "category": "{{category}}",
+  "priority": "{{priority}}",
+  "channel_id": "{{channelId}}",
+  "visibility": "{{visibility}}",
+  "color": "{{color}}",
+  "group_key": "{{groupKey}}",
+  "is_group_summary": "{{isGroupSummary}}",
+  "when": "{{when}}",
+  "actions": "{{actions}}",
+  "people": "{{people}}",
+  "badge_icon_type": "{{badgeIconType}}",
+  "small_icon_base64": "{{smallIcon}}",
+  "large_icon_base64": "{{largeIcon}}",
+  "picture_base64": "{{picture}}"
+}
                             """
                         ).trimIndent()
                         result.success(prefs.getString("payload_template", def))
@@ -175,6 +273,11 @@ class MainActivity : FlutterActivity() {
                         val intent = Intent(android.provider.Settings.ACTION_IGNORE_BACKGROUND_DATA_RESTRICTIONS_SETTINGS,
                             Uri.parse("package:$packageName"))
                         startActivity(intent)
+                        result.success(null)
+                    }
+                    "isListenerConnected" -> result.success(MsgNotificationListener.isConnected)
+                    "rebindListener" -> {
+                        requestListenerRebind()
                         result.success(null)
                     }
                     else -> result.notImplemented()
@@ -245,6 +348,21 @@ class MainActivity : FlutterActivity() {
                     else -> result.notImplemented()
                 }
             }
+
+        // Best-effort recovery: some OEMs (MIUI/HyperOS) silently drop the listener
+        // bind even though notification access stays granted in settings.
+        requestListenerRebind()
+    }
+
+    private fun requestListenerRebind() {
+        try {
+            if (hasNotificationAccess() && !MsgNotificationListener.isConnected) {
+                android.service.notification.NotificationListenerService.requestRebind(
+                    android.content.ComponentName(this, MsgNotificationListener::class.java)
+                )
+                try { LogStore.append(this, "Requested notification listener rebind") } catch (_: Exception) {}
+            }
+        } catch (_: Exception) {}
     }
 
     private fun drawableToBitmap(drawable: Drawable): Bitmap {
@@ -297,5 +415,54 @@ class MainActivity : FlutterActivity() {
 
     private fun openBatterySettings() {
         startActivity(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS))
+    }
+}
+
+/**
+ * Encrypts/decrypts the persisted auth payload using an AES/GCM key stored in
+ * the Android Keystore. The ciphertext is stored as Base64 in SharedPreferences,
+ * so credentials are never written to disk in plain text.
+ */
+object SecureAuthStore {
+    private const val KEYSTORE = "AndroidKeyStore"
+    private const val KEY_ALIAS = "msg_mirror_auth_key"
+    private const val IV_SIZE = 12
+    private const val GCM_TAG_BITS = 128
+
+    private fun getOrCreateKey(): SecretKey {
+        val ks = KeyStore.getInstance(KEYSTORE).apply { load(null) }
+        (ks.getKey(KEY_ALIAS, null) as? SecretKey)?.let { return it }
+        val generator = KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES, KEYSTORE)
+        generator.init(
+            KeyGenParameterSpec.Builder(
+                KEY_ALIAS,
+                KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT
+            )
+                .setBlockModes(KeyProperties.BLOCK_MODE_GCM)
+                .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
+                .setKeySize(256)
+                .build()
+        )
+        return generator.generateKey()
+    }
+
+    fun encrypt(plain: String): String {
+        val cipher = Cipher.getInstance("AES/GCM/NoPadding")
+        cipher.init(Cipher.ENCRYPT_MODE, getOrCreateKey())
+        val ct = cipher.doFinal(plain.toByteArray(Charsets.UTF_8))
+        val iv = cipher.iv
+        val out = ByteArray(iv.size + ct.size)
+        System.arraycopy(iv, 0, out, 0, iv.size)
+        System.arraycopy(ct, 0, out, iv.size, ct.size)
+        return Base64.encodeToString(out, Base64.NO_WRAP)
+    }
+
+    fun decrypt(data: String): String {
+        val raw = Base64.decode(data, Base64.NO_WRAP)
+        val iv = raw.copyOfRange(0, IV_SIZE)
+        val ct = raw.copyOfRange(IV_SIZE, raw.size)
+        val cipher = Cipher.getInstance("AES/GCM/NoPadding")
+        cipher.init(Cipher.DECRYPT_MODE, getOrCreateKey(), GCMParameterSpec(GCM_TAG_BITS, iv))
+        return cipher.doFinal(ct).toString(Charsets.UTF_8)
     }
 }

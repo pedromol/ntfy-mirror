@@ -1,37 +1,71 @@
 import 'package:flutter/material.dart';
-import 'package:message_mirror/message_stream.dart';
-import 'package:message_mirror/platform_controls.dart';
-import 'package:message_mirror/prefs.dart';
-import 'package:message_mirror/permissions.dart';
-import 'package:message_mirror/logger.dart';
-import 'package:flutter/services.dart';
-import 'package:message_mirror/app_selector.dart';
-import 'package:message_mirror/payload_template_screen.dart';
+import 'package:ntfy_mirror/l10n/app_localizations.dart';
+import 'package:ntfy_mirror/message_stream.dart';
+import 'package:ntfy_mirror/platform_controls.dart';
+import 'package:ntfy_mirror/prefs.dart';
+import 'package:ntfy_mirror/permissions.dart';
+import 'package:ntfy_mirror/logger.dart';
+import 'package:ntfy_mirror/app_selector.dart';
+import 'package:ntfy_mirror/payload_template_screen.dart';
 import 'dart:async';
-import 'package:message_mirror/logs_screen.dart';
+import 'package:ntfy_mirror/logs_screen.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:ntfy_mirror/auth_settings.dart';
 
 void main() {
   runApp(const MyApp());
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  ThemeMode _themeMode = ThemeMode.system;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadTheme();
+  }
+
+  Future<void> _loadTheme() async {
+    final mode = await Prefs.getThemeMode();
+    setState(() {
+      switch (mode) {
+        case 'light':
+          _themeMode = ThemeMode.light;
+          break;
+        case 'dark':
+          _themeMode = ThemeMode.dark;
+          break;
+        default:
+          _themeMode = ThemeMode.system;
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Message Mirror',
-      theme: _createTheme(),
+      title: 'Ntfy Mirror',
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      themeMode: _themeMode,
+      theme: _createTheme(Brightness.light),
+      darkTheme: _createTheme(Brightness.dark),
       home: const SplashScreen(),
     );
   }
 
-  ThemeData _createTheme() {
+  ThemeData _createTheme(Brightness brightness) {
     final colorScheme = ColorScheme.fromSeed(
       seedColor: const Color(0xFF6B73FF),
-      brightness: Brightness.light,
+      brightness: brightness,
     );
 
     return ThemeData(
@@ -142,17 +176,17 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
   @override
   void initState() {
     super.initState();
-    
+
     _mainController = AnimationController(
-      duration: const Duration(milliseconds: 2400), 
+      duration: const Duration(milliseconds: 2400),
       vsync: this,
     );
-    
+
     _rotationController = AnimationController(
       duration: const Duration(milliseconds: 3000),
       vsync: this,
     );
-    
+
     _progressController = AnimationController(
       duration: const Duration(milliseconds: 1800),
       vsync: this,
@@ -165,7 +199,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
         curve: const Interval(0.0, 0.3, curve: Curves.easeOut),
       ),
     );
-    
+
     _logoSlideAnimation = Tween<Offset>(begin: const Offset(0, -0.5), end: Offset.zero).animate(
       CurvedAnimation(
         parent: _mainController,
@@ -179,7 +213,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
         curve: const Interval(0.2, 0.5, curve: Curves.easeOut),
       ),
     );
-    
+
     _titleSlideAnimation = Tween<Offset>(begin: const Offset(0, 0.3), end: Offset.zero).animate(
       CurvedAnimation(
         parent: _mainController,
@@ -193,7 +227,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
         curve: const Interval(0.4, 0.7, curve: Curves.easeOut),
       ),
     );
-    
+
     _subtitleSlideAnimation = Tween<Offset>(begin: const Offset(0, 0.3), end: Offset.zero).animate(
       CurvedAnimation(
         parent: _mainController,
@@ -207,7 +241,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
         curve: const Interval(0.6, 0.9, curve: Curves.easeOut),
       ),
     );
-    
+
     _githubSlideAnimation = Tween<Offset>(begin: const Offset(0, 0.2), end: Offset.zero).animate(
       CurvedAnimation(
         parent: _mainController,
@@ -248,10 +282,10 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
     // Start animations
     _mainController.forward();
     _rotationController.repeat();
-    
+
     await Future.delayed(const Duration(milliseconds: 800));
     _progressController.forward();
-    
+
     await Future.delayed(const Duration(milliseconds: 1200));
     if (mounted) {
       Navigator.of(context).pushReplacement(
@@ -288,13 +322,13 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final size = MediaQuery.of(context).size;
-    
+
     return Scaffold(
       backgroundColor: colorScheme.surface,
       body: AnimatedBuilder(
         animation: Listenable.merge([
-          _mainController, 
-          _rotationController, 
+          _mainController,
+          _rotationController,
           _progressController
         ]),
         builder: (context, child) {
@@ -313,7 +347,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                   ),
                 ),
               ),
-              
+
               // Main content
               Center(
                 child: Column(
@@ -342,7 +376,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                                 ),
                               ),
                             ),
-                            
+
                             // Main logo container
                             Container(
                               width: 96,
@@ -375,16 +409,16 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                         ),
                       ),
                     ),
-                    
+
                     const SizedBox(height: 48),
-                    
+
                     // Animated Title
                     SlideTransition(
                       position: _titleSlideAnimation,
                       child: FadeTransition(
                         opacity: _titleFadeAnimation,
                         child: Text(
-                          'Message Mirror',
+                          AppLocalizations.of(context)!.appTitle,
                           style: theme.textTheme.headlineLarge?.copyWith(
                             fontWeight: FontWeight.w700,
                             color: colorScheme.onSurface,
@@ -394,16 +428,16 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                         ),
                       ),
                     ),
-                    
+
                     const SizedBox(height: 12),
-                    
+
                     // Animated Subtitle
                     SlideTransition(
                       position: _subtitleSlideAnimation,
                       child: FadeTransition(
                         opacity: _subtitleFadeAnimation,
                         child: Text(
-                          'Seamless Message Forwarding',
+                          AppLocalizations.of(context)!.splashSubtitle,
                           style: theme.textTheme.bodyLarge?.copyWith(
                             color: colorScheme.onSurfaceVariant,
                             fontWeight: FontWeight.w400,
@@ -412,9 +446,9 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                         ),
                       ),
                     ),
-                    
+
                     const SizedBox(height: 64),
-                    
+
                     // Animated GitHub Link
                     SlideTransition(
                       position: _githubSlideAnimation,
@@ -422,7 +456,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                         opacity: _githubFadeAnimation,
                         child: GestureDetector(
                           onTap: () async {
-                            final uri = Uri.parse('https://github.com/Dragon-Born/message-mirror');
+                            final uri = Uri.parse('https://github.com/pedromol/ntfy-mirror');
                             if (await canLaunchUrl(uri)) {
                               await launchUrl(uri);
                             }
@@ -446,7 +480,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                                 ),
                                 const SizedBox(width: 12),
                                 Text(
-                                  'Dragon-Born/message-mirror',
+                                  'pedromol/ntfy-mirror',
                                   style: theme.textTheme.bodyMedium?.copyWith(
                                     color: colorScheme.primary,
                                     fontWeight: FontWeight.w500,
@@ -465,9 +499,9 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                         ),
                       ),
                     ),
-                    
+
                     const SizedBox(height: 24),
-                    
+
                     // Animated Version
                     FadeTransition(
                       opacity: _versionFadeAnimation,
@@ -492,7 +526,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                   ],
                 ),
               ),
-              
+
               // Progress indicator at bottom
               Positioned(
                 bottom: 48,
@@ -533,7 +567,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                       ),
                       const SizedBox(height: 16),
                       Text(
-                        'Initializing...',
+                        AppLocalizations.of(context)!.initializing,
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: colorScheme.onSurfaceVariant,
                           fontWeight: FontWeight.w500,
@@ -552,465 +586,6 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
 }
 
 class ConfigScreen extends StatefulWidget {
-  @override
-  State<ConfigScreen> createState() => _ConfigScreenState();
-}
-
-class _ConfigScreenState extends State<ConfigScreen> {
-  final TextEditingController endpointCtrl = TextEditingController();
-  bool smsEnabled = true;
-  bool hasNotifAccess = false;
-  bool hasPostNotif = false;
-  bool hasReadSms = false;
-  bool ignoringBattery = false;
-  bool serviceRunning = false;
-  bool checkingService = true;
-  MessageStream? stream;
-  String _lastSavedEndpoint = '';
-  AuthHeader? _authHeader;
-  Map<String, String> _authFields = {};
-
-  @override
-  void initState() {
-    super.initState();
-    _loadPrefs();
-  }
-
-  @override
-  void reassemble() {
-    super.reassemble();
-    _recheckService();
-  }
-
-  Future<void> _loadPrefs() async {
-    final sms = await _getSmsEnabled();
-    serviceRunning = await PlatformControls.isServiceRunning();
-    await _refreshPerms();
-    if (!mounted) return;
-    setState(() {
-      smsEnabled = sms;
-      checkingService = false;
-    });
-    final ep = await Prefs.getEndpoint();
-    if (!mounted) return;
-    setState(() {
-      endpointCtrl.text = ep;
-      _lastSavedEndpoint = ep;
-    });
-    _authHeader = await _getAuthHeader();
-    _authFields = await _getAuthFields();
-  }
-
-  Future<void> _recheckService() async {
-    setState(() { checkingService = true; });
-    final running = await PlatformControls.isServiceRunning();
-    if (!mounted) return;
-    setState(() {
-      serviceRunning = running;
-      checkingService = false;
-    });
-  }
-
-  Future<AuthHeader> _getAuthHeader() async {
-    final auth = await Prefs.getAuth();
-    if (auth.isEmpty) return NoAuth();
-    switch (auth['type']) {
-      case 'Bearer': return BearerAuth(auth['token'] as String);
-      case 'API key': return APIKeyAuth(auth['headerName'] as String, auth['apiKey'] as String);
-      case 'Basic': return BasicAuth(auth['username'] as String, auth['password'] as String);
-      default: return NoAuth();
-    }
-  }
-
-  Future<Map<String, String>> _getAuthFields() async {
-    final auth = await Prefs.getAuth();
-    return {
-      'token': auth['token'] as String,
-      'headerName': auth['headerName'] as String,
-      'apiKey': auth['apiKey'] as String,
-      'username': auth['username'] as String,
-      'password': auth['password'] as String,
-    };
-  }
-
-  void _saveDestination() {
-    final endpoint = endpointCtrl.text.trim();
-    if (endpoint.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Set Endpoint first')));
-      return;
-    }
-    Prefs.setEndpoint(endpoint);
-    final s = MessageStream(reception: '', endpoint: endpoint);
-    s.start();
-    Logger.d('Destination saved: endpoint=$endpoint');
-    setState(() {
-      stream = s;
-      _lastSavedEndpoint = endpoint;
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-    
-    return Scaffold(
-      backgroundColor: colorScheme.surface,
-      appBar: AppBar(
-        backgroundColor: colorScheme.surface,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: colorScheme.primaryContainer,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(
-                Icons.sync_alt,
-                color: colorScheme.onPrimaryContainer,
-                size: 24,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Text(
-              'Message Mirror',
-              style: theme.textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.w600,
-                color: colorScheme.onSurface,
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          IconButton(
-            tooltip: 'Queue',
-            icon: Icon(Icons.cloud_upload_outlined, color: colorScheme.onSurfaceVariant),
-            onPressed: () { Navigator.push(context, MaterialPageRoute(builder: (_) => const QueueScreen())); },
-          ),
-          IconButton(
-            tooltip: 'Logs',
-            icon: Icon(Icons.article_outlined, color: colorScheme.onSurfaceVariant),
-            onPressed: () { Navigator.push(context, MaterialPageRoute(builder: (_) => const LogsScreen())); },
-          ),
-          const SizedBox(width: 8),
-        ],
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  colorScheme.primaryContainer,
-                  colorScheme.primaryContainer.withValues(alpha: 0.7),
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Column(
-              children: [
-                Icon(
-                  serviceRunning ? Icons.check_circle_rounded : Icons.pending_rounded,
-                  size: 48,
-                  color: serviceRunning ? Colors.green : colorScheme.onPrimaryContainer,
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  serviceRunning ? 'Service Active' : 'Service Inactive',
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: colorScheme.onPrimaryContainer,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  serviceRunning 
-                      ? 'Messages are being monitored and forwarded'
-                      : 'Configure settings and start the service',
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: colorScheme.onPrimaryContainer.withValues(alpha: 0.8),
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 24),
-          _ModernCard(
-            title: 'Destination Settings',
-            icon: Icons.settings_ethernet_rounded,
-            child: Column(
-              children: [
-                TextField(
-                  controller: endpointCtrl,
-                  textInputAction: TextInputAction.done,
-                  decoration: const InputDecoration(
-                    labelText: 'Endpoint URL',
-                    hintText: 'https://your-api.example.com/webhook',
-                    prefixIcon: Icon(Icons.link_rounded),
-                    helperText: 'HTTP endpoint to receive message data',
-                  ),
-                  onChanged: (_) { setState(() {}); },
-                ),
-                const SizedBox(height: 24),
-                FilledButton.icon(
-                  onPressed: (endpointCtrl.text.trim().isEmpty || !_destinationDirty)
-                      ? null
-                      : _saveDestination,
-                  icon: Icon(_destinationDirty ? Icons.save_rounded : Icons.check_rounded),
-                  label: Text(_destinationDirty ? 'Save Configuration' : 'Configuration Saved'),
-                ),
-                const SizedBox(height: 12),
-                OutlinedButton.icon(
-                  onPressed: () { Navigator.push(context, MaterialPageRoute(builder: (_) => const PayloadTemplateScreen())); },
-                  icon: const Icon(Icons.data_object_rounded),
-                  label: const Text('Edit Payload Template'),
-                ),
-                const SizedBox(height: 8),
-                OutlinedButton.icon(
-                  onPressed: () { Navigator.push(context, MaterialPageRoute(builder: (_) => const AppSelectorScreen())); },
-                  icon: const Icon(Icons.apps_rounded),
-                  label: const Text('Select Apps to Monitor'),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 20),
-          _ModernCard(
-            title: 'Auth Headers',
-            icon: Icons.security_rounded,
-            child: Column(
-              children: [
-                DropdownButton<AuthHeader>(
-                  value: _authHeader,
-                  onChanged: (AuthHeader? value) {
-                    setState(() {
-                      _authHeader = value;
-                      _authFields = _getAuthFields().then((fields) => fields);
-                    });
-                  },
-                  items: [
-                    DropdownMenuItem(value: NoAuth(), child: Text('None')),
-                    DropdownMenuItem(value: BearerAuth(''), child: Text('Bearer token')),
-                    DropdownMenuItem(value: APIKeyAuth('X-API-Key', ''), child: Text('API key')),
-                    DropdownMenuItem(value: BasicAuth('user', 'pass'), child: Text('Basic auth')),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                if (_authHeader != null && _authHeader!.type != 'None') {
-                  _AuthFields(_authHeader!, _authFields)
-                },
-                const SizedBox(height: 20),
-              ],
-            ),
-          ),
-          const SizedBox(height: 20),
-          _ModernCard(
-            title: 'Service Control',
-            icon: Icons.power_settings_new_rounded,
-            child: Column(
-              children: [
-                if (checkingService)
-                  Container(
-                    padding: const EdgeInsets.all(20),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: colorScheme.primary,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Text(
-                          'Checking service status...',
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                else if (!serviceRunning)
-                  FilledButton.icon(
-                    onPressed: (endpointCtrl.text.trim().isEmpty)
-                        ? null
-                        : () async {
-                            setState(() { checkingService = true; });
-                            await PlatformControls.startService();
-                            await Future.delayed(const Duration(milliseconds: 600));
-                            final running = await PlatformControls.isServiceRunning();
-                            if (!mounted) return;
-                            setState(() {
-                              serviceRunning = running;
-                              checkingService = false;
-                            });
-                          },
-                    icon: const Icon(Icons.play_circle_filled_rounded),
-                    label: const Text('Start Monitoring Service'),
-                    style: FilledButton.styleFrom(
-                      backgroundColor: Colors.green,
-                      foregroundColor: Colors.white,
-                    ),
-                  ),
-                else
-                  OutlinedButton.icon(
-                    onPressed: () async {
-                      setState(() { checkingService = true; });
-                      await PlatformControls.stopService();
-                      bool running = true;
-                      for (int i = 0; i < 5; i++) {
-                        await Future.delayed(const Duration(milliseconds: 300));
-                        running = await PlatformControls.isServiceRunning();
-                        if (!running) break;
-                      }
-                      if (!mounted) return;
-                      setState(() {
-                        serviceRunning = running;
-                        checkingService = false;
-                      });
-                    },
-                    icon: const Icon(Icons.stop_circle_rounded),
-                    label: const Text('Stop Service'),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.red,
-                      side: BorderSide(color: Colors.red.withValues(alpha: 0.5)),
-                    ),
-                  ),
-                const SizedBox(height: 20),
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.sms_rounded,
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'SMS Observer',
-                              style: theme.textTheme.titleSmall?.copyWith(
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            Text(
-                              'Monitor SMS messages in addition to notifications',
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: colorScheme.onSurfaceVariant,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Switch(
-                        value: smsEnabled,
-                        onChanged: (v) async { 
-                          await _setSmsEnabled(v); 
-                          await Logger.d('SMS enabled set to $v'); 
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 20),
-          _ModernCard(
-            title: 'Permissions',
-            icon: Icons.security_rounded,
-            child: Column(
-              children: [
-                _ModernPermissionRow(
-                  ok: hasNotifAccess,
-                  title: 'Notification Access',
-                  subtitle: 'Required to capture notifications',
-                  icon: Icons.notifications_rounded,
-                  action: () { PermissionService.openNotificationAccess(); },
-                ),
-                const SizedBox(height: 16),
-                _ModernPermissionRow(
-                  ok: hasPostNotif,
-                  title: 'Post Notifications',
-                  subtitle: 'Allow app to show status notifications',
-                  icon: Icons.notification_add_rounded,
-                  action: () async { 
-                    await PermissionService.requestPostNotifications(); 
-                    await _refreshPerms(); 
-                  },
-                ),
-                const SizedBox(height: 16),
-                _ModernPermissionRow(
-                  ok: hasReadSms,
-                  title: 'Read SMS',
-                  subtitle: 'Optional: Monitor SMS messages',
-                  icon: Icons.sms_rounded,
-                  isOptional: true,
-                  action: () async { 
-                    await PermissionService.requestReadSms(); 
-                    await _refreshPerms(); 
-                  },
-                ),
-                const SizedBox(height: 16),
-                _ModernPermissionRow(
-                  ok: ignoringBattery,
-                  title: 'Battery Optimization',
-                  subtitle: 'Prevent Android from stopping the service',
-                  icon: Icons.battery_saver_rounded,
-                  action: () { PermissionService.openBatterySettings(); },
-                ),
-                const SizedBox(height: 16),
-                FutureBuilder<int>(
-                  future: PermissionService.getDataSaverStatus(),
-                  builder: (context, snapshot) {
-                    final st = snapshot.data ?? 1;
-                    final ok = st == 1 || st == 2;
-                    return _ModernPermissionRow(
-                      ok: ok,
-                      title: 'Unrestricted Data',
-                      subtitle: 'Allow background network access',
-                      icon: Icons.data_usage_rounded,
-                      action: () { PermissionService.openDataSaverSettings(); },
-                    );
-                  },
-                ),
-                const SizedBox(height: 20),
-                OutlinedButton.icon(
-                  onPressed: _refreshPerms,
-                  icon: const Icon(Icons.refresh_rounded),
-                  label: const Text('Refresh Permissions'),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 20),
-          _GitHubInfoCard(),
-          const SizedBox(height: 32),
-        ],
-      ),
-    );
-  }
-}
   const ConfigScreen({super.key});
 
   @override
@@ -1028,11 +603,14 @@ class _ConfigScreenState extends State<ConfigScreen> {
   bool checkingService = true;
   MessageStream? stream;
   String _lastSavedEndpoint = '';
+  bool _validating = false;
+  ValidationReport? _validation;
 
   @override
   void initState() {
     super.initState();
     _loadPrefs();
+    MessageStream.wireValidationResultChannel();
   }
 
   @override
@@ -1042,12 +620,11 @@ class _ConfigScreenState extends State<ConfigScreen> {
   }
 
   Future<void> _loadPrefs() async {
-    final sms = await _getSmsEnabled();
+    smsEnabled = await Prefs.getSmsEnabled();
     serviceRunning = await PlatformControls.isServiceRunning();
     await _refreshPerms();
     if (!mounted) return;
     setState(() {
-      smsEnabled = sms;
       checkingService = false;
     });
     final ep = await Prefs.getEndpoint();
@@ -1068,16 +645,10 @@ class _ConfigScreenState extends State<ConfigScreen> {
     });
   }
 
-  Future<bool> _getSmsEnabled() async {
-    MethodChannel ch = const MethodChannel('msg_mirror_prefs');
-    final res = await ch.invokeMethod('getSmsEnabled');
-    return res == true;
-  }
-
   Future<void> _setSmsEnabled(bool v) async {
-    MethodChannel ch = const MethodChannel('msg_mirror_prefs');
-    await ch.invokeMethod('setSmsEnabled', v);
     setState(() { smsEnabled = v; });
+    await Prefs.setSmsEnabled(v);
+    await Logger.d('SMS enabled set to $v');
   }
 
   Future<void> _refreshPerms() async {
@@ -1097,19 +668,72 @@ class _ConfigScreenState extends State<ConfigScreen> {
   bool get _destinationDirty =>
       endpointCtrl.text.trim() != _lastSavedEndpoint.trim();
 
-  void _saveDestination() {
+  void _saveDestination() async {
     final endpoint = endpointCtrl.text.trim();
     if (endpoint.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Set Endpoint first')));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(AppLocalizations.of(context)!.setEndpointFirst)));
+      return;
+    }
+    final error = _validateEndpoint(endpoint);
+    if (error != null) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error)));
       return;
     }
     Prefs.setEndpoint(endpoint);
     final s = MessageStream(reception: '', endpoint: endpoint);
-    s.start();
-    Logger.d('Destination saved: endpoint=$endpoint');
+    await s.start();
+    Logger.d('Destination saved: endpoint=${_sanitizeEndpoint(endpoint)}');
     setState(() {
       stream = s;
       _lastSavedEndpoint = endpoint;
+    });
+  }
+
+  static String? _validateEndpoint(String raw) {
+    final uri = Uri.tryParse(raw);
+    if (uri == null || uri.host.isEmpty) {
+      return 'Invalid URL. Use https://your-api.example.com/webhook';
+    }
+    if (uri.scheme == 'https') return null;
+    if (uri.scheme == 'http' && (uri.host == 'localhost' || uri.host == '127.0.0.1')) {
+      return null;
+    }
+    return 'Only HTTPS is allowed (HTTP only for localhost).';
+  }
+
+  static String _sanitizeEndpoint(String raw) {
+    try {
+      final u = Uri.parse(raw);
+      if (u.userInfo.isEmpty) return raw;
+      return u.replace(userInfo: '').toString();
+    } catch (_) {
+      return raw;
+    }
+  }
+
+  Future<void> _runValidation() async {
+    final endpoint = endpointCtrl.text.trim();
+    if (endpoint.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(AppLocalizations.of(context)!.setEndpointFirst)));
+      return;
+    }
+    final error = _validateEndpoint(endpoint);
+    if (error != null) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error)));
+      return;
+    }
+    setState(() {
+      _validating = true;
+      _validation = null;
+    });
+    final s = MessageStream(reception: '', endpoint: endpoint);
+    await s.start();
+    final report = await s.runValidation(timeout: const Duration(seconds: 90));
+    s.dispose();
+    if (!mounted) return;
+    setState(() {
+      _validating = false;
+      _validation = report;
     });
   }
 
@@ -1117,7 +741,7 @@ class _ConfigScreenState extends State<ConfigScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    
+
     return Scaffold(
       backgroundColor: colorScheme.surface,
       appBar: AppBar(
@@ -1140,7 +764,7 @@ class _ConfigScreenState extends State<ConfigScreen> {
             ),
             const SizedBox(width: 12),
             Text(
-              'Message Mirror',
+              'Ntfy Mirror',
               style: theme.textTheme.headlineSmall?.copyWith(
                 fontWeight: FontWeight.w600,
                 color: colorScheme.onSurface,
@@ -1150,12 +774,12 @@ class _ConfigScreenState extends State<ConfigScreen> {
         ),
         actions: [
           IconButton(
-            tooltip: 'Queue',
+            tooltip: AppLocalizations.of(context)!.queue,
             icon: Icon(Icons.cloud_upload_outlined, color: colorScheme.onSurfaceVariant),
             onPressed: () { Navigator.push(context, MaterialPageRoute(builder: (_) => const QueueScreen())); },
           ),
           IconButton(
-            tooltip: 'Logs',
+            tooltip: AppLocalizations.of(context)!.logs,
             icon: Icon(Icons.article_outlined, color: colorScheme.onSurfaceVariant),
             onPressed: () { Navigator.push(context, MaterialPageRoute(builder: (_) => const LogsScreen())); },
           ),
@@ -1166,7 +790,7 @@ class _ConfigScreenState extends State<ConfigScreen> {
         padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
+          children: [
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
@@ -1189,7 +813,7 @@ class _ConfigScreenState extends State<ConfigScreen> {
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    serviceRunning ? 'Service Active' : 'Service Inactive',
+                    serviceRunning ? AppLocalizations.of(context)!.serviceActive : AppLocalizations.of(context)!.serviceInactive,
                     style: theme.textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.w600,
                       color: colorScheme.onPrimaryContainer,
@@ -1197,9 +821,9 @@ class _ConfigScreenState extends State<ConfigScreen> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    serviceRunning 
-                        ? 'Messages are being monitored and forwarded'
-                        : 'Configure settings and start the service',
+                    serviceRunning
+                        ? AppLocalizations.of(context)!.messagesMonitored
+                        : AppLocalizations.of(context)!.configureStartService,
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: colorScheme.onPrimaryContainer.withValues(alpha: 0.8),
                     ),
@@ -1208,61 +832,107 @@ class _ConfigScreenState extends State<ConfigScreen> {
                 ],
               ),
             ),
-            
+
             const SizedBox(height: 24),
-            
+
             _ModernCard(
-              title: 'Destination Settings',
+              title: AppLocalizations.of(context)!.destinationSettings,
               icon: Icons.settings_ethernet_rounded,
               child: Column(
                 children: [
                   TextField(
                     controller: endpointCtrl,
                     textInputAction: TextInputAction.done,
-                    decoration: const InputDecoration(
-                      labelText: 'Endpoint URL',
-                      hintText: 'https://your-api.example.com/webhook',
+                    decoration: InputDecoration(
+                      labelText: AppLocalizations.of(context)!.endpointUrl,
+                      hintText: AppLocalizations.of(context)!.endpointHint,
                       prefixIcon: Icon(Icons.link_rounded),
-                      helperText: 'HTTP endpoint to receive message data',
+                      helperText: AppLocalizations.of(context)!.endpointHelper,
                     ),
                     onChanged: (_) { setState(() {}); },
                   ),
                   const SizedBox(height: 24),
                   FilledButton.icon(
-                      onPressed: (endpointCtrl.text.trim().isEmpty || !_destinationDirty)
-                          ? null
-                          : _saveDestination,
+                    onPressed: (endpointCtrl.text.trim().isEmpty || !_destinationDirty)
+                        ? null
+                        : _saveDestination,
                     icon: Icon(_destinationDirty ? Icons.save_rounded : Icons.check_rounded),
-                    label: Text(_destinationDirty ? 'Save Configuration' : 'Configuration Saved'),
+                    label: Text(_destinationDirty ? AppLocalizations.of(context)!.saveConfiguration : AppLocalizations.of(context)!.configurationSaved),
                   ),
                   const SizedBox(height: 12),
                   OutlinedButton.icon(
                     onPressed: () { Navigator.push(context, MaterialPageRoute(builder: (_) => const PayloadTemplateScreen())); },
                     icon: const Icon(Icons.data_object_rounded),
-                    label: const Text('Edit Payload Template'),
+                    label: Text(AppLocalizations.of(context)!.editPayloadTemplate),
                   ),
                   const SizedBox(height: 8),
-                   OutlinedButton.icon(
-                      onPressed: () { Navigator.push(context, MaterialPageRoute(builder: (_) => const AppSelectorScreen())); },
+                  OutlinedButton.icon(
+                    onPressed: () { Navigator.push(context, MaterialPageRoute(builder: (_) => const AppSelectorScreen())); },
                     icon: const Icon(Icons.apps_rounded),
-                    label: const Text('Select Apps to Monitor'),
+                    label: Text(AppLocalizations.of(context)!.selectAppsToMonitor),
                   ),
+                  const SizedBox(height: 20),
+                  FilledButton.tonalIcon(
+                    onPressed: (endpointCtrl.text.trim().isEmpty || _validating)
+                        ? null
+                        : _runValidation,
+                    icon: _validating
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.fact_check_outlined),
+                    label: Text(_validating ? AppLocalizations.of(context)!.testing : AppLocalizations.of(context)!.testConnectivityAuth),
+                  ),
+                  if (_validating)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 12),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.sync_rounded, size: 16, color: colorScheme.onSurfaceVariant),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              AppLocalizations.of(context)!.sendingTestWaiting,
+                              textAlign: TextAlign.center,
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  if (_validation != null && !_validating) ...[
+                    const SizedBox(height: 12),
+                    _ValidationResultCard(report: _validation!),
+                  ],
                 ],
               ),
             ),
-            
+
             const SizedBox(height: 20),
-            
+
             _ModernCard(
-              title: 'Service Control',
+              title: AppLocalizations.of(context)!.httpAuthentication,
+              icon: Icons.security_rounded,
+              child: const AuthSettingsSection(),
+            ),
+
+            const SizedBox(height: 20),
+
+            _ModernCard(
+              title: AppLocalizations.of(context)!.serviceControl,
               icon: Icons.power_settings_new_rounded,
               child: Column(
-                    children: [
-                      if (checkingService)
+                children: [
+                  if (checkingService)
                     Container(
                       padding: const EdgeInsets.all(20),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           SizedBox(
                             width: 20,
@@ -1274,63 +944,61 @@ class _ConfigScreenState extends State<ConfigScreen> {
                           ),
                           const SizedBox(width: 12),
                           Text(
-                            'Checking service status...',
+                            AppLocalizations.of(context)!.checkingServiceStatus,
                             style: theme.textTheme.bodyMedium?.copyWith(
                               color: colorScheme.onSurfaceVariant,
                             ),
                           ),
                         ],
-                          ),
-                        )
-                      else if (!serviceRunning)
+                      ),
+                    )
+                  else if (!serviceRunning)
                     FilledButton.icon(
-                            onPressed: (endpointCtrl.text.trim().isEmpty)
-                                ? null
-                                : () async {
-                                    setState(() { checkingService = true; });
-                                    await PlatformControls.startService();
-                                    await Future.delayed(const Duration(milliseconds: 600));
-                                    final running = await PlatformControls.isServiceRunning();
-                                    if (!mounted) return;
-                                    setState(() {
-                                      serviceRunning = running;
-                                      checkingService = false;
-                                    });
-                                  },
-                      icon: const Icon(Icons.play_circle_filled_rounded),
-                      label: const Text('Start Monitoring Service'),
-                      style: FilledButton.styleFrom(
-                        backgroundColor: Colors.green,
-                        foregroundColor: Colors.white,
-                          ),
-                        )
-                      else
-                    OutlinedButton.icon(
-                            onPressed: () async {
+                      onPressed: (endpointCtrl.text.trim().isEmpty)
+                          ? null
+                          : () async {
                               setState(() { checkingService = true; });
-                              await PlatformControls.stopService();
-                              bool running = true;
-                              for (int i = 0; i < 5; i++) {
-                                await Future.delayed(const Duration(milliseconds: 300));
-                                running = await PlatformControls.isServiceRunning();
-                                if (!running) break;
-                              }
+                              await PlatformControls.startService();
+                              await Future.delayed(const Duration(milliseconds: 600));
+                              final running = await PlatformControls.isServiceRunning();
                               if (!mounted) return;
                               setState(() {
                                 serviceRunning = running;
                                 checkingService = false;
                               });
                             },
+                      icon: const Icon(Icons.play_circle_filled_rounded),
+                      label: Text(AppLocalizations.of(context)!.startMonitoringService),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: Colors.green,
+                        foregroundColor: Colors.white,
+                      ),
+                    )
+                  else
+                    OutlinedButton.icon(
+                      onPressed: () async {
+                        setState(() { checkingService = true; });
+                        await PlatformControls.stopService();
+                        bool running = true;
+                        for (int i = 0; i < 5; i++) {
+                          await Future.delayed(const Duration(milliseconds: 300));
+                          running = await PlatformControls.isServiceRunning();
+                          if (!running) break;
+                        }
+                        if (!mounted) return;
+                        setState(() {
+                          serviceRunning = running;
+                          checkingService = false;
+                        });
+                      },
                       icon: const Icon(Icons.stop_circle_rounded),
-                      label: const Text('Stop Service'),
+                      label: Text(AppLocalizations.of(context)!.stopService),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: Colors.red,
                         side: BorderSide(color: Colors.red.withValues(alpha: 0.5)),
                       ),
                     ),
-                  
                   const SizedBox(height: 20),
-                  
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
@@ -1349,13 +1017,13 @@ class _ConfigScreenState extends State<ConfigScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'SMS Observer',
+                                AppLocalizations.of(context)!.smsObserver,
                                 style: theme.textTheme.titleSmall?.copyWith(
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
                               Text(
-                                'Monitor SMS messages in addition to notifications',
+                                AppLocalizations.of(context)!.monitorSmsInAddition,
                                 style: theme.textTheme.bodySmall?.copyWith(
                                   color: colorScheme.onSurfaceVariant,
                                 ),
@@ -1365,10 +1033,7 @@ class _ConfigScreenState extends State<ConfigScreen> {
                         ),
                         Switch(
                           value: smsEnabled,
-                          onChanged: (v) async { 
-                            await _setSmsEnabled(v); 
-                            await Logger.d('SMS enabled set to $v'); 
-                          },
+                          onChanged: _setSmsEnabled,
                         ),
                       ],
                     ),
@@ -1376,81 +1041,89 @@ class _ConfigScreenState extends State<ConfigScreen> {
                 ],
               ),
             ),
-            
-            const SizedBox(height: 20),
-            
-            _ModernCard(
-              title: 'Permissions',
-              icon: Icons.security_rounded,
-              child: Column(
-                children: [
-                  _ModernPermissionRow(
-                    ok: hasNotifAccess,
-                    title: 'Notification Access',
-                    subtitle: 'Required to capture notifications',
-                    icon: Icons.notifications_rounded,
-                    action: () { PermissionService.openNotificationAccess(); },
-                  ),
-                  const SizedBox(height: 16),
-                  _ModernPermissionRow(
-                    ok: hasPostNotif,
-                    title: 'Post Notifications',
-                    subtitle: 'Allow app to show status notifications',
-                    icon: Icons.notification_add_rounded,
-                    action: () async { 
-                      await PermissionService.requestPostNotifications(); 
-                      await _refreshPerms(); 
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  _ModernPermissionRow(
-                    ok: hasReadSms,
-                    title: 'Read SMS',
-                    subtitle: 'Optional: Monitor SMS messages',
-                    icon: Icons.sms_rounded,
-                    isOptional: true,
-                    action: () async { 
-                      await PermissionService.requestReadSms(); 
-                      await _refreshPerms(); 
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  _ModernPermissionRow(
-                    ok: ignoringBattery,
-                    title: 'Battery Optimization',
-                    subtitle: 'Prevent Android from stopping the service',
-                    icon: Icons.battery_saver_rounded,
-                    action: () { PermissionService.openBatterySettings(); },
-                  ),
-                  const SizedBox(height: 16),
-                  FutureBuilder<int>(
-                    future: PermissionService.getDataSaverStatus(),
-                    builder: (context, snapshot) {
-                      final st = snapshot.data ?? 1;
-                      final ok = st == 1 || st == 2;
-                      return _ModernPermissionRow(
-                        ok: ok,
-                        title: 'Unrestricted Data',
-                        subtitle: 'Allow background network access',
-                        icon: Icons.data_usage_rounded,
-                        action: () { PermissionService.openDataSaverSettings(); },
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 20),
-                  OutlinedButton.icon(
-                      onPressed: _refreshPerms,
-                    icon: const Icon(Icons.refresh_rounded),
-                    label: const Text('Refresh Permissions'),
-                  ),
-                ],
+
+              _ModernCard(
+                title: 'Appearance',
+                icon: Icons.palette_rounded,
+                child: const _ThemeModeSelector(),
               ),
-            ),
-            
+
+              const SizedBox(height: 20),
+
+              _ModernCard(
+                title: AppLocalizations.of(context)!.permissions,
+                icon: Icons.security_rounded,
+                child: Column(
+                  children: [
+                    _ModernPermissionRow(
+                      ok: hasNotifAccess,
+                      title: AppLocalizations.of(context)!.notificationAccess,
+                      subtitle: AppLocalizations.of(context)!.requiredToCaptureNotifications,
+                      icon: Icons.notifications_rounded,
+                      action: () { PermissionService.openNotificationAccess(); },
+                    ),
+                    const SizedBox(height: 16),
+                    _ModernPermissionRow(
+                      ok: hasPostNotif,
+                      title: AppLocalizations.of(context)!.postNotifications,
+                      subtitle: AppLocalizations.of(context)!.allowShowStatusNotifications,
+                      icon: Icons.notification_add_rounded,
+                      action: () async {
+                        await PermissionService.requestPostNotifications();
+                        await _refreshPerms();
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    _ModernPermissionRow(
+                      ok: hasReadSms,
+                      title: AppLocalizations.of(context)!.readSms,
+                      subtitle: AppLocalizations.of(context)!.optionalMonitorSms,
+                      icon: Icons.sms_rounded,
+                      isOptional: true,
+                      action: () async {
+                        await PermissionService.requestReadSms();
+                        await _refreshPerms();
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    _ModernPermissionRow(
+                      ok: ignoringBattery,
+                      title: AppLocalizations.of(context)!.batteryOptimization,
+                      subtitle: AppLocalizations.of(context)!.preventAndroidStopping,
+                      icon: Icons.battery_saver_rounded,
+                      action: () { PermissionService.openBatterySettings(); },
+                    ),
+                    const SizedBox(height: 16),
+                    FutureBuilder<int>(
+                      future: PermissionService.getDataSaverStatus(),
+                      builder: (context, snapshot) {
+                        final st = snapshot.data ?? 1;
+                        final ok = st == 1 || st == 2;
+                        return _ModernPermissionRow(
+                          ok: ok,
+                          title: AppLocalizations.of(context)!.unrestrictedData,
+                          subtitle: AppLocalizations.of(context)!.allowBackgroundNetwork,
+                          icon: Icons.data_usage_rounded,
+                          action: () { PermissionService.openDataSaverSettings(); },
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 20),
+                    OutlinedButton.icon(
+                      onPressed: _refreshPerms,
+                      icon: const Icon(Icons.refresh_rounded),
+                      label: Text(AppLocalizations.of(context)!.refreshPermissions),
+                    ),
+                  ],
+                ),
+              ),
+
+
+
             const SizedBox(height: 20),
-            
-            _GitHubInfoCard(),
-            
+
+            Container(),
+
             const SizedBox(height: 32),
           ],
         ),
@@ -1509,7 +1182,78 @@ class _ModernCard extends StatelessWidget {
             child,
           ],
         ),
-        ),
+      ),
+    );
+  }
+}
+
+/// Localized summary for a validation run. [ValidationReport] only carries
+/// codes; the English text lives in the `.arb` files.
+String _validationMessage(ValidationReport report, AppLocalizations l10n) {
+  if (report.success) return l10n.validationSuccess;
+  if (report.timedOut) return l10n.validationTimeout;
+  final failure = report.failure;
+  if (failure == null) {
+    return report.httpOk ? l10n.validationNotConfirmed : l10n.validationSendFailed;
+  }
+  switch (failure) {
+    case ValidationFailure.authFailure:
+      return l10n.validationAuthFailed;
+    case ValidationFailure.endpointUnreachable:
+      return l10n.validationEndpointUnreachable;
+    case ValidationFailure.listenerNoAccess:
+      return l10n.validationListenerNoAccess;
+    case ValidationFailure.listenerNotRunning:
+      return l10n.validationListenerNotRunning;
+    case ValidationFailure.notificationsDisabled:
+      return l10n.validationNotificationsDisabled;
+    case ValidationFailure.testNotificationUnsupported:
+      return l10n.validationTestNotificationUnsupported;
+    case ValidationFailure.testNotificationFailed:
+      final detail = report.errorDetail;
+      return detail == null
+          ? l10n.validationTestNotificationFailed
+          : l10n.validationTestNotificationFailedDetail(detail);
+  }
+}
+
+class _ValidationResultCard extends StatelessWidget {
+  final ValidationReport report;
+
+  const _ValidationResultCard({required this.report});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final ok = report.success;
+    final color = ok ? Colors.green : colorScheme.error;
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: ok
+            ? Colors.green.withValues(alpha: 0.12)
+            : colorScheme.errorContainer.withValues(alpha: 0.4),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withValues(alpha: 0.4)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(ok ? Icons.check_circle_rounded : Icons.error_outline_rounded,
+              color: color, size: 22),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              _validationMessage(report, AppLocalizations.of(context)!),
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: ok ? Colors.green.shade900 : colorScheme.onErrorContainer,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -1543,30 +1287,30 @@ class _ModernPermissionRow extends StatelessWidget {
     if (ok) {
       statusColor = Colors.green;
       statusIcon = Icons.check_circle_rounded;
-      statusText = 'Granted';
+      statusText = AppLocalizations.of(context)!.granted;
     } else if (isOptional) {
       statusColor = colorScheme.onSurfaceVariant;
       statusIcon = Icons.info_outline_rounded;
-      statusText = 'Optional';
+      statusText = AppLocalizations.of(context)!.optional;
     } else {
       statusColor = Colors.orange;
       statusIcon = Icons.warning_rounded;
-      statusText = 'Required';
+      statusText = AppLocalizations.of(context)!.required;
     }
 
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: ok 
+        color: ok
             ? Colors.green.withValues(alpha: 0.1)
-            : (isOptional 
+            : (isOptional
                 ? colorScheme.surfaceContainerHighest.withValues(alpha: 0.5)
                 : Colors.orange.withValues(alpha: 0.1)),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: ok 
+          color: ok
               ? Colors.green.withValues(alpha: 0.3)
-              : (isOptional 
+              : (isOptional
                   ? colorScheme.outline.withValues(alpha: 0.2)
                   : Colors.orange.withValues(alpha: 0.3)),
         ),
@@ -1618,7 +1362,7 @@ class _ModernPermissionRow extends StatelessWidget {
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
-      children: [
+                  children: [
                     Icon(
                       statusIcon,
                       size: 14,
@@ -1636,15 +1380,15 @@ class _ModernPermissionRow extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 8),
-        TextButton(
-          onPressed: action,
+              TextButton(
+                onPressed: action,
                 style: TextButton.styleFrom(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   minimumSize: Size.zero,
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
                 child: Text(
-                  ok ? 'Settings' : 'Grant',
+                  ok ? AppLocalizations.of(context)!.settings : AppLocalizations.of(context)!.grant,
                   style: theme.textTheme.labelMedium?.copyWith(
                     color: colorScheme.primary,
                     fontWeight: FontWeight.w600,
@@ -1659,7 +1403,127 @@ class _ModernPermissionRow extends StatelessWidget {
   }
 }
 
+class _ThemeModeSelector extends StatefulWidget {
+  const _ThemeModeSelector({super.key});
+
+  @override
+  State<_ThemeModeSelector> createState() => _ThemeModeSelectorState();
+}
+
+class _ThemeModeSelectorState extends State<_ThemeModeSelector> {
+  String _currentMode = 'system';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadMode();
+  }
+
+  Future<void> _loadMode() async {
+    final mode = await Prefs.getThemeMode();
+    setState(() {
+      _currentMode = mode;
+    });
+  }
+
+  Future<void> _setMode(String mode) async {
+    setState(() {
+      _currentMode = mode;
+    });
+    await Prefs.setThemeMode(mode);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Column(
+      children: [
+        _ModeOption(
+          label: 'System Default',
+          value: 'system',
+          isSelected: _currentMode == 'system',
+          onSelect: _setMode,
+          colorScheme: colorScheme,
+        ),
+        const SizedBox(height: 8),
+        _ModeOption(
+          label: 'Light Mode',
+          value: 'light',
+          isSelected: _currentMode == 'light',
+          onSelect: _setMode,
+          colorScheme: colorScheme,
+        ),
+        const SizedBox(height: 8),
+        _ModeOption(
+          label: 'Dark Mode',
+          value: 'dark',
+          isSelected: _currentMode == 'dark',
+          onSelect: _setMode,
+          colorScheme: colorScheme,
+        ),
+      ],
+    );
+  }
+}
+
+class _ModeOption extends StatelessWidget {
+  final String label;
+  final String value;
+  final bool isSelected;
+  final Function(String) onSelect;
+  final ColorScheme colorScheme;
+
+  const _ModeOption({
+    required this.label,
+    required this.value,
+    required this.isSelected,
+    required this.onSelect,
+    required this.colorScheme,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: () => onSelect(value),
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? colorScheme.primaryContainer
+              : colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected ? colorScheme.primary : colorScheme.outline.withValues(alpha: 0.2),
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              isSelected ? Icons.check_circle : Icons.circle_outlined,
+              size: 20,
+              color: isSelected ? colorScheme.onPrimaryContainer : colorScheme.onSurfaceVariant,
+            ),
+            const SizedBox(width: 12),
+            Text(
+              label,
+              style: TextStyle(
+                color: isSelected ? colorScheme.onPrimaryContainer : colorScheme.onSurface,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _GitHubInfoCard extends StatefulWidget {
+  const _GitHubInfoCard({super.key});
+
   @override
   State<_GitHubInfoCard> createState() => _GitHubInfoCardState();
 }
@@ -1692,7 +1556,7 @@ class _GitHubInfoCardState extends State<_GitHubInfoCard> {
     final colorScheme = theme.colorScheme;
 
     return _ModernCard(
-      title: 'About',
+      title: AppLocalizations.of(context)!.about,
       icon: Icons.info_outline_rounded,
       child: Column(
         children: [
@@ -1734,7 +1598,7 @@ class _GitHubInfoCardState extends State<_GitHubInfoCard> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Message Mirror',
+                          AppLocalizations.of(context)!.appTitle,
                           style: theme.textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.w600,
                             color: colorScheme.onSurface,
@@ -1784,7 +1648,7 @@ class _GitHubInfoCardState extends State<_GitHubInfoCard> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Open Source Project',
+                              AppLocalizations.of(context)!.openSourceProject,
                               style: theme.textTheme.titleSmall?.copyWith(
                                 fontWeight: FontWeight.w600,
                                 color: colorScheme.onSurface,
@@ -1793,13 +1657,15 @@ class _GitHubInfoCardState extends State<_GitHubInfoCard> {
                             const SizedBox(height: 2),
                             GestureDetector(
                               onTap: () async {
-                                final uri = Uri.parse('https://github.com/Dragon-Born/message-mirror');
+                                final uri = Uri.parse('https://github.com/pedromol/ntfy-mirror');
                                 if (await canLaunchUrl(uri)) {
                                   await launchUrl(uri);
-                                }
+}
+
+
                               },
                               child: Text(
-                                'github.com/Dragon-Born/message-mirror',
+                                'github.com/pedromol/ntfy-mirror',
                                 style: theme.textTheme.bodySmall?.copyWith(
                                   color: colorScheme.primary,
                                   fontWeight: FontWeight.w500,
@@ -1828,7 +1694,7 @@ class _GitHubInfoCardState extends State<_GitHubInfoCard> {
               Expanded(
                 child: GestureDetector(
                   onTap: () async {
-                    final uri = Uri.parse('https://github.com/Dragon-Born/message-mirror');
+                    final uri = Uri.parse('https://github.com/pedromol/ntfy-mirror');
                     if (await canLaunchUrl(uri)) {
                       await launchUrl(uri);
                     }
@@ -1852,7 +1718,7 @@ class _GitHubInfoCardState extends State<_GitHubInfoCard> {
                         ),
                         const SizedBox(width: 8),
                         Text(
-                          'Star on GitHub',
+                          AppLocalizations.of(context)!.starOnGithub,
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: colorScheme.primary,
                             fontWeight: FontWeight.w500,
@@ -1867,7 +1733,7 @@ class _GitHubInfoCardState extends State<_GitHubInfoCard> {
               Expanded(
                 child: GestureDetector(
                   onTap: () async {
-                    final uri = Uri.parse('https://github.com/Dragon-Born/message-mirror/issues');
+                    final uri = Uri.parse('https://github.com/pedromol/ntfy-mirror/issues');
                     if (await canLaunchUrl(uri)) {
                       await launchUrl(uri);
                     }
@@ -1891,7 +1757,7 @@ class _GitHubInfoCardState extends State<_GitHubInfoCard> {
                         ),
                         const SizedBox(width: 8),
                         Text(
-                          'Report Issues',
+                          AppLocalizations.of(context)!.reportIssues,
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: colorScheme.primary,
                             fontWeight: FontWeight.w500,
@@ -1919,13 +1785,11 @@ void backgroundMain() {
 Future<void> _bootstrapBackground() async {
   final reception = await Prefs.getReception();
   final endpoint = await Prefs.getEndpoint();
-  await Logger.d('Background(main.dart) bootstrap: reception=${reception.isEmpty ? 'EMPTY' : 'SET'}, endpoint=${endpoint.isEmpty ? 'DEFAULT' : endpoint}');
+  await Logger.d('Background(main.dart) bootstrap: reception=${reception.isEmpty ? 'EMPTY' : 'SET'}, endpoint=${endpoint.isEmpty ? 'DEFAULT' : 'SET'}');
   final stream = MessageStream(
     reception: reception,
     endpoint: endpoint.isEmpty ? null : endpoint,
   );
-  stream.start();
+  await stream.start();
   await Logger.d('Background(main.dart) stream started');
 }
-
- 
